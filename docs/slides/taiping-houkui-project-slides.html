@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>太平猴魁茶叶溯源与品质辅助评估系统 - 项目讲解</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ===========================================
+         THEME VARIABLES
+         Electric Studio inspired professional tech theme
+         =========================================== */
+      :root {
+        --bg-dark: #08101c;
+        --bg-deep: #101b30;
+        --bg-soft: #eef4ff;
+        --bg-card: rgba(255, 255, 255, 0.08);
+        --accent-blue: #4361ee;
+        --accent-cyan: #4cc9f0;
+        --text-dark: #0c1325;
+        --text-light: #eef4ff;
+        --text-muted: rgba(238, 244, 255, 0.72);
+        --text-soft-dark: rgba(12, 19, 37, 0.72);
+        --line: rgba(255, 255, 255, 0.12);
+        --shadow-card: 0 12px 24px rgba(9, 16, 28, 0.16);
+        --font-display: "Manrope", sans-serif;
+        --font-body: "Manrope", sans-serif;
+        --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+        --duration-fast: 0.35s;
+        --duration-normal: 0.65s;
+        --title-size: clamp(1.5rem, 5vw, 4rem);
+        --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
+        --h3-size: clamp(1rem, 2.5vw, 1.75rem);
+        --body-size: clamp(0.75rem, 1.5vw, 1.125rem);
+        --small-size: clamp(0.65rem, 1vw, 0.875rem);
+        --slide-padding: clamp(1rem, 4vw, 4rem);
+        --content-gap: clamp(0.5rem, 2vw, 2rem);
+        --element-gap: clamp(0.25rem, 1vw, 1rem);
+      }
+
+      /* ===========================================
+         RESET
+         =========================================== */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-body);
+        background:
+          radial-gradient(circle at 20% 12%, rgba(76, 201, 240, 0.12), transparent 22%),
+          radial-gradient(circle at 80% 80%, rgba(67, 97, 238, 0.18), transparent 28%),
+          var(--bg-dark);
+        color: var(--text-light);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      /* ===========================================
+         VIEWPORT FITTING: MANDATORY BASE STYLES
+         =========================================== */
+      html, body {
+          height: 100%;
+          overflow-x: hidden;
+      }
+
+      html {
+          scroll-snap-type: y mandatory;
+          scroll-behavior: smooth;
+      }
+
+      .slide {
+          width: 100vw;
+          height: 100vh;
+          height: 100dvh;
+          overflow: hidden;
+          scroll-snap-align: start;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+      }
+
+      .slide-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          max-height: 100%;
+          overflow: hidden;
+          padding: var(--slide-padding);
+      }
+
+      :root {
+          --title-size: clamp(1.5rem, 5vw, 4rem);
+          --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
+          --h3-size: clamp(1rem, 2.5vw, 1.75rem);
+          --body-size: clamp(0.75rem, 1.5vw, 1.125rem);
+          --small-size: clamp(0.65rem, 1vw, 0.875rem);
+          --slide-padding: clamp(1rem, 4vw, 4rem);
+          --content-gap: clamp(0.5rem, 2vw, 2rem);
+          --element-gap: clamp(0.25rem, 1vw, 1rem);
+      }
+
+      .card, .container, .content-box {
+          max-width: min(90vw, 1000px);
+          max-height: min(80vh, 700px);
+      }
+
+      .feature-list, .bullet-list {
+          gap: clamp(0.4rem, 1vh, 1rem);
+      }
+
+      .feature-list li, .bullet-list li {
+          font-size: var(--body-size);
+          line-height: 1.4;
+      }
+
+      .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+          gap: clamp(0.5rem, 1.5vw, 1rem);
+      }
+
+      img, .image-container {
+          max-width: 100%;
+          max-height: min(50vh, 400px);
+          object-fit: contain;
+      }
+
+      @media (max-height: 700px) {
+          :root {
+              --slide-padding: clamp(0.75rem, 3vw, 2rem);
+              --content-gap: clamp(0.4rem, 1.5vw, 1rem);
+              --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
+              --h2-size: clamp(1rem, 3vw, 1.75rem);
+          }
+      }
+
+      @media (max-height: 600px) {
+          :root {
+              --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
+              --content-gap: clamp(0.3rem, 1vw, 0.75rem);
+              --title-size: clamp(1.1rem, 4vw, 2rem);
+              --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
+          }
+
+          .nav-dots, .keyboard-hint, .decorative {
+              display: none;
+          }
+      }
+
+      @media (max-height: 500px) {
+          :root {
+              --slide-padding: clamp(0.4rem, 2vw, 1rem);
+              --title-size: clamp(1rem, 3.5vw, 1.5rem);
+              --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
+              --body-size: clamp(0.65rem, 1vw, 0.85rem);
+          }
+      }
+
+      @media (max-width: 600px) {
+          :root {
+              --title-size: clamp(1.25rem, 7vw, 2.5rem);
+          }
+
+          .grid {
+              grid-template-columns: 1fr;
+          }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after {
+              animation-duration: 0.01ms !important;
+              transition-duration: 0.2s !important;
+          }
+
+          html {
+              scroll-behavior: auto;
+          }
+      }
+
+      /* ===========================================
+         GLOBAL DECORATION AND UI
+         =========================================== */
+      .progress-track {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.08);
+        z-index: 1000;
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+        transition: width var(--duration-fast) ease;
+      }
+
+      .nav-dots {
+        position: fixed;
+        right: clamp(0.8rem, 2vw, 1.4rem);
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+        z-index: 1000;
+      }
+
+      .nav-dot {
+        width: 0.78rem;
+        height: 0.78rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.26);
+        background: transparent;
+        cursor: pointer;
+        transition:
+          transform var(--duration-fast) ease,
+          background var(--duration-fast) ease,
+          border-color var(--duration-fast) ease;
+      }
+
+      .nav-dot.active {
+        transform: scale(1.15);
+        background: var(--accent-cyan);
+        border-color: var(--accent-cyan);
+      }
+
+      .slide-number {
+        position: absolute;
+        top: clamp(1rem, 2vw, 1.5rem);
+        right: clamp(1rem, 2vw, 1.5rem);
+        font-size: var(--small-size);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.68);
+      }
+
+      .eyebrow {
+        font-size: var(--small-size);
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .headline {
+        font-family: var(--font-display);
+        font-size: var(--title-size);
+        line-height: 0.95;
+        font-weight: 800;
+      }
+
+      .section-title {
+        font-family: var(--font-display);
+        font-size: var(--h2-size);
+        line-height: 1.02;
+        font-weight: 800;
+        max-width: 13ch;
+      }
+
+      .lede {
+        font-size: var(--body-size);
+        line-height: 1.55;
+        max-width: 44ch;
+      }
+
+      .micro {
+        font-size: var(--small-size);
+        line-height: 1.55;
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(24px);
+        transition:
+          opacity var(--duration-normal) var(--ease-out-expo),
+          transform var(--duration-normal) var(--ease-out-expo);
+      }
+
+      .slide.visible .reveal {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .slide.visible .reveal:nth-child(1) { transition-delay: 0.08s; }
+      .slide.visible .reveal:nth-child(2) { transition-delay: 0.16s; }
+      .slide.visible .reveal:nth-child(3) { transition-delay: 0.24s; }
+      .slide.visible .reveal:nth-child(4) { transition-delay: 0.32s; }
+      .slide.visible .reveal:nth-child(5) { transition-delay: 0.4s; }
+
+      .accent-line {
+        width: clamp(4rem, 9vw, 8rem);
+        height: 0.35rem;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: clamp(0.45rem, 1vw, 0.8rem);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75em 1em;
+        border-radius: 999px;
+        font-size: var(--small-size);
+        font-weight: 700;
+      }
+
+      .pill.light {
+        background: rgba(67, 97, 238, 0.12);
+        color: var(--accent-blue);
+      }
+
+      .pill.dark {
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--text-light);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .bullet-list {
+        list-style: none;
+        display: grid;
+      }
+
+      .bullet-list li {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.8rem;
+        align-items: start;
+      }
+
+      .bullet-list li::before {
+        content: "";
+        width: 0.62rem;
+        height: 0.62rem;
+        margin-top: 0.36rem;
+        border-radius: 999px;
+        background: linear-gradient(180deg, var(--accent-cyan), var(--accent-blue));
+      }
+
+      .chip-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: clamp(0.7rem, 1.4vw, 1rem);
+      }
+
+      .card-grid {
+        display: grid;
+        gap: clamp(0.75rem, 1.5vw, 1.1rem);
+      }
+
+      .glass-card {
+        border: 1px solid var(--line);
+        background: var(--bg-card);
+        backdrop-filter: blur(12px);
+        border-radius: 1.2rem;
+        box-shadow: var(--shadow-card);
+      }
+
+      .kpi-card,
+      .module-card,
+      .flow-card,
+      .highlight-card {
+        padding: clamp(0.9rem, 1.8vw, 1.3rem);
+      }
+
+      .kpi-card strong,
+      .module-card strong,
+      .flow-card strong,
+      .highlight-card strong {
+        display: block;
+        font-size: clamp(0.96rem, 1.8vw, 1.25rem);
+        margin-bottom: 0.42rem;
+      }
+
+      .kpi-card p,
+      .module-card p,
+      .flow-card p,
+      .highlight-card p {
+        font-size: var(--body-size);
+        line-height: 1.5;
+      }
+
+      .stack-list {
+        display: grid;
+        gap: 0.55rem;
+        font-size: var(--body-size);
+      }
+
+      .stack-list span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+      }
+
+      .stack-list span::before {
+        content: "";
+        width: 0.58rem;
+        height: 0.58rem;
+        border-radius: 50%;
+        background: linear-gradient(180deg, var(--accent-cyan), var(--accent-blue));
+      }
+
+      .cover-slide {
+        display: grid;
+        grid-template-columns: 1.08fr 0.92fr;
+        background: linear-gradient(180deg, rgba(9, 13, 22, 0.94), rgba(9, 13, 22, 1));
+      }
+
+      .cover-panel-light {
+        background: linear-gradient(180deg, rgba(247, 249, 255, 0.98), rgba(233, 240, 255, 0.94));
+        color: var(--text-dark);
+      }
+
+      .cover-panel-light .slide-content {
+        justify-content: flex-end;
+        gap: var(--content-gap);
+      }
+
+      .cover-panel-light .eyebrow {
+        color: var(--accent-blue);
+      }
+
+      .cover-panel-light .lede {
+        color: var(--text-soft-dark);
+      }
+
+      .cover-panel-dark .slide-content {
+        gap: var(--content-gap);
+        justify-content: center;
+      }
+
+      .cover-callout {
+        max-width: 20ch;
+        font-size: clamp(1rem, 2.1vw, 1.5rem);
+        line-height: 1.35;
+        font-weight: 700;
+      }
+
+      .cover-summary {
+        max-width: 30ch;
+        color: var(--text-muted);
+      }
+
+      .cover-gridline {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: min(34vw, 380px);
+        height: min(34vw, 380px);
+        border-top: 1px solid rgba(255, 255, 255, 0.14);
+        border-left: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
+      .two-panel {
+        display: grid;
+        grid-template-columns: 0.88fr 1.12fr;
+      }
+
+      .light-side {
+        background: rgba(247, 249, 255, 0.97);
+        color: var(--text-dark);
+      }
+
+      .dark-side {
+        background:
+          linear-gradient(180deg, rgba(12, 18, 33, 0.9), rgba(11, 17, 31, 0.96)),
+          var(--bg-deep);
+      }
+
+      .light-side .lede,
+      .light-side .micro {
+        color: var(--text-soft-dark);
+      }
+
+      .content-stack {
+        display: grid;
+        gap: clamp(0.8rem, 1.8vw, 1.2rem);
+      }
+
+      .role-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+      }
+
+      .role-badge {
+        padding: 0.68em 0.92em;
+        border-radius: 0.9rem;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: var(--small-size);
+      }
+
+      .role-badge strong {
+        display: block;
+        margin-bottom: 0.22rem;
+      }
+
+      .architecture-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: clamp(0.8rem, 1.6vw, 1rem);
+      }
+
+      .flow-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: clamp(0.7rem, 1.4vw, 1rem);
+      }
+
+      .flow-card {
+        min-height: min(24vh, 196px);
+      }
+
+      .flow-step {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.2rem;
+        height: 2.2rem;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+        color: white;
+        font-weight: 800;
+        margin-bottom: 0.8rem;
+      }
+
+      .showcase-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: clamp(0.8rem, 1.6vw, 1.1rem);
+      }
+
+      .browser-shell {
+        border-radius: 1.25rem;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .browser-top {
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.38rem;
+        padding: 0 0.9rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.07);
+      }
+
+      .browser-top span {
+        width: 0.6rem;
+        height: 0.6rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.4);
+      }
+
+      .placeholder-shot {
+        min-height: min(34vh, 280px);
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background:
+          linear-gradient(135deg, rgba(67, 97, 238, 0.18), rgba(76, 201, 240, 0.06)),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+      }
+
+      .placeholder-screen {
+        flex: 1;
+        border-radius: 1rem;
+        border: 1px dashed rgba(255, 255, 255, 0.32);
+        display: grid;
+        place-items: center;
+        color: rgba(255, 255, 255, 0.68);
+        font-size: var(--body-size);
+        text-align: center;
+        padding: 1rem;
+      }
+
+      .placeholder-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.8rem;
+        margin-top: 0.9rem;
+        font-size: var(--small-size);
+        color: rgba(255, 255, 255, 0.78);
+      }
+
+      .closing-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: clamp(0.9rem, 2vw, 1.4rem);
+      }
+
+      .closing-list {
+        display: grid;
+        gap: 0.72rem;
+      }
+
+      .closing-list div {
+        padding: 0.9rem 1rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .closing-list strong {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-size: clamp(0.96rem, 1.7vw, 1.15rem);
+      }
+
+      .quote-box {
+        padding: clamp(1rem, 2vw, 1.3rem);
+        border-left: 3px solid var(--accent-cyan);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+
+      .footer-note {
+        position: absolute;
+        left: var(--slide-padding);
+        bottom: clamp(0.85rem, 2vw, 1.3rem);
+        color: rgba(255, 255, 255, 0.62);
+      }
+
+      @media (max-width: 920px) {
+        .cover-slide,
+        .two-panel,
+        .architecture-grid,
+        .closing-grid,
+        .flow-grid,
+        .showcase-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .nav-dots {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress-track" aria-hidden="true">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <nav class="nav-dots" id="navDots" aria-label="幻灯片导航"></nav>
+
+    <main>
+      <!-- ===========================================
+           SLIDE 1: COVER
+           =========================================== -->
+      <section class="slide cover-slide" data-title="封面">
+        <div class="slide-number">01 / 07</div>
+        <div class="cover-panel-light">
+          <div class="slide-content">
+            <p class="eyebrow reveal">Project Overview</p>
+            <h1 class="headline reveal">太平猴魁茶叶溯源与品质辅助评估系统</h1>
+            <p class="lede reveal">
+              一个面向毕业设计讲解场景的前后端联调项目，围绕茶叶批次溯源、品质辅助评估、监管审核和消费者公开查询形成完整业务闭环。
+            </p>
+            <div class="pill-row reveal">
+              <span class="pill light">Go + Gin + GORM + MySQL</span>
+              <span class="pill light">React + Vite + TypeScript</span>
+              <span class="pill light">RBAC + 图表 + 二维码查询</span>
+            </div>
+          </div>
+        </div>
+        <div class="cover-panel-dark">
+          <div class="slide-content">
+            <div class="accent-line reveal"></div>
+            <p class="cover-callout reveal">
+              重点不是单点功能，而是把“多角色协同 + 溯源链路 + 质量评价 + 对外查询”连成一条可演示主线。
+            </p>
+            <p class="cover-summary reveal">
+              本套讲解稿默认采用专业科技风，适合答辩展示、项目讲解和演示录屏，也为后续补充系统截图预留了位置。
+            </p>
+          </div>
+          <div class="cover-gridline decorative" aria-hidden="true"></div>
+        </div>
+        <p class="footer-note micro">讲解定位：项目讲解 / 6-8 页 / 中文 HTML 演示稿</p>
+      </section>
+
+      <!-- ===========================================
+           SLIDE 2: BACKGROUND AND GOALS
+           =========================================== -->
+      <section class="slide two-panel" data-title="背景与目标">
+        <div class="slide-number">02 / 07</div>
+        <div class="light-side">
+          <div class="slide-content content-stack">
+            <p class="eyebrow reveal" style="color: var(--accent-blue);">Why This System</p>
+            <h2 class="section-title reveal">项目背景与目标</h2>
+            <p class="lede reveal">
+              茶叶产业中，批次信息、生产阶段、品质结果和监管动作往往分散，消费者查询链路也不够直观。本项目尝试用一个统一系统把这些信息组织起来。
+            </p>
+            <div class="quote-box reveal">
+              讲解重点：既要说明“为什么做”，也要说明“做成了什么闭环”，而不是只罗列接口或页面。
+            </div>
+          </div>
+        </div>
+        <div class="dark-side">
+          <div class="slide-content content-stack">
+            <div class="chip-grid">
+              <article class="glass-card kpi-card reveal">
+                <strong>溯源可见</strong>
+                <p>按批次码、溯源码、产品编号组织批次与阶段记录，形成链式展示。</p>
+              </article>
+              <article class="glass-card kpi-card reveal">
+                <strong>品质可解释</strong>
+                <p>围绕外形、色泽、香气、滋味四项指标自动算分并判定等级。</p>
+              </article>
+              <article class="glass-card kpi-card reveal">
+                <strong>监管可追踪</strong>
+                <p>监管方可查看批次审核状态、审核历史并提交审核意见。</p>
+              </article>
+              <article class="glass-card kpi-card reveal">
+                <strong>消费可查询</strong>
+                <p>消费者可匿名公开查询，也可登录后查看历史、收藏与反馈。</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===========================================
+           SLIDE 3: ARCHITECTURE
+           =========================================== -->
+      <section class="slide two-panel" data-title="系统架构">
+        <div class="slide-number">03 / 07</div>
+        <div class="light-side">
+          <div class="slide-content content-stack">
+            <p class="eyebrow reveal" style="color: var(--accent-blue);">System Architecture</p>
+            <h2 class="section-title reveal">系统总体架构</h2>
+            <p class="lede reveal">
+              当前仓库是毕业设计联调版，后端负责接口、权限、评分和数据存储，前端负责角色门户、图表展示和公开查询入口。
+            </p>
+            <div class="role-strip reveal">
+              <div class="role-badge"><strong>admin</strong> 审核注册与管理用户</div>
+              <div class="role-badge"><strong>farmer</strong> 查看批次并补录阶段</div>
+              <div class="role-badge"><strong>enterprise</strong> 创建批次与评估品质</div>
+              <div class="role-badge"><strong>regulator</strong> 审核批次与查看统计</div>
+              <div class="role-badge"><strong>consumer</strong> 匿名查询与个人中心</div>
+            </div>
+          </div>
+        </div>
+        <div class="dark-side">
+          <div class="slide-content">
+            <div class="architecture-grid">
+              <article class="glass-card module-card reveal">
+                <strong>前端展示层</strong>
+                <div class="stack-list">
+                  <span>React + Vite + TypeScript</span>
+                  <span>Ant Design 后台风格</span>
+                  <span>@ant-design/plots 图表展示</span>
+                  <span>公开查询页支持二维码</span>
+                </div>
+              </article>
+              <article class="glass-card module-card reveal">
+                <strong>后端业务层</strong>
+                <div class="stack-list">
+                  <span>Gin 路由与 HTTP 处理</span>
+                  <span>GORM 数据访问与模型映射</span>
+                  <span>JWT + RBAC 权限控制</span>
+                  <span>评分规则与统计接口输出</span>
+                </div>
+              </article>
+              <article class="glass-card module-card reveal">
+                <strong>数据与演示层</strong>
+                <div class="stack-list">
+                  <span>MySQL 8 持久化存储</span>
+                  <span>AUTO_MIGRATE 自动迁移</span>
+                  <span>SEED_DEMO 演示账号与样例数据</span>
+                  <span>支持前后端联调与现场演示</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===========================================
+           SLIDE 4: FLOW
+           =========================================== -->
+      <section class="slide" data-title="业务主线">
+        <div class="slide-number">04 / 07</div>
+        <div class="slide-content content-stack">
+          <p class="eyebrow reveal" style="color: var(--accent-cyan);">Core Walkthrough</p>
+          <h2 class="section-title reveal" style="max-width: 16ch;">核心业务主线</h2>
+          <p class="lede reveal" style="max-width: 56ch;">
+            这套系统最适合按“注册审核 -> 企业建批次 -> 阶段记录 -> 品质评估 -> 监管审核 -> 消费查询”的顺序讲解，因为它能完整体现多角色协同。
+          </p>
+          <div class="flow-grid">
+            <article class="glass-card flow-card reveal">
+              <div class="flow-step">1</div>
+              <strong>注册与审核</strong>
+              <p>茶农、企业或消费者注册后进入待审核状态，由管理员在注册审核页通过申请。</p>
+            </article>
+            <article class="glass-card flow-card reveal">
+              <div class="flow-step">2</div>
+              <strong>企业创建批次</strong>
+              <p>企业账号进入批次管理页，创建新的太平猴魁批次，形成后续溯源和评估主体。</p>
+            </article>
+            <article class="glass-card flow-card reveal">
+              <div class="flow-step">3</div>
+              <strong>补录阶段记录</strong>
+              <p>在批次详情页补录种植、采摘、加工、包装或流通等阶段信息，形成完整链路。</p>
+            </article>
+            <article class="glass-card flow-card reveal">
+              <div class="flow-step">4</div>
+              <strong>品质辅助评估</strong>
+              <p>录入四项指标，系统自动计算综合得分、等级结论，并展示雷达图结果。</p>
+            </article>
+            <article class="glass-card flow-card reveal">
+              <div class="flow-step">5</div>
+              <strong>监管审核</strong>
+              <p>监管方查看批次审核状态和历史记录，提交审核动作后同步改变审核结果。</p>
+            </article>
+            <article class="glass-card flow-card reveal">
+              <div class="flow-step">6</div>
+              <strong>消费者公开查询</strong>
+              <p>通过二维码或溯源码查询公开信息，登录后还可记录历史、收藏与提交反馈。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===========================================
+           SLIDE 5: MODULES
+           =========================================== -->
+      <section class="slide two-panel" data-title="功能模块">
+        <div class="slide-number">05 / 07</div>
+        <div class="light-side">
+          <div class="slide-content content-stack">
+            <p class="eyebrow reveal" style="color: var(--accent-blue);">Modules</p>
+            <h2 class="section-title reveal">功能模块拆解</h2>
+            <p class="lede reveal">
+              前端路由和页面已经按角色门户区分，当前实现的重点是“不同角色看到不同入口，但围绕同一个批次对象协同工作”。
+            </p>
+            <ul class="bullet-list reveal">
+              <li><span>管理员门户：注册审核、用户管理。</span></li>
+              <li><span>企业门户：批次管理、品质评估、统计分析。</span></li>
+              <li><span>监管门户：批次审核、统计查看。</span></li>
+              <li><span>消费者模块：公开查询、收藏、反馈、查询历史。</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="dark-side">
+          <div class="slide-content">
+            <div class="card-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); display: grid;">
+              <article class="glass-card module-card reveal">
+                <strong>角色门户与权限体验</strong>
+                <p>通过前端路由和 RoleGuard 控制角色可见菜单，配合后端 JWT + RBAC 形成双层约束。</p>
+              </article>
+              <article class="glass-card module-card reveal">
+                <strong>品质评估与图表结果</strong>
+                <p>系统支持录入四项指标，自动输出综合得分、等级判定和品质雷达图。</p>
+              </article>
+              <article class="glass-card module-card reveal">
+                <strong>统计分析与经营参考</strong>
+                <p>提供概览指标、产量分布、等级占比和指标趋势图，支撑质量管控与经营决策说明。</p>
+              </article>
+              <article class="glass-card module-card reveal">
+                <strong>公开查询与消费者中心</strong>
+                <p>支持二维码跳转公开查询页，并在登录后记录历史、收藏感兴趣批次和提交反馈。</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===========================================
+           SLIDE 6: SHOWCASE PLACEHOLDERS
+           =========================================== -->
+      <section class="slide" data-title="页面展示位">
+        <div class="slide-number">06 / 07</div>
+        <div class="slide-content content-stack">
+          <p class="eyebrow reveal" style="color: var(--accent-cyan);">Reserved Screenshots</p>
+          <h2 class="section-title reveal" style="max-width: 18ch;">页面展示位（可后续替换真实截图）</h2>
+          <p class="lede reveal" style="max-width: 56ch;">
+            这一页已经按讲解顺序预留了 3 个展示窗口。后续只要把真实截图替换进去，就能把“系统讲解”自然过渡到“页面演示”。
+          </p>
+          <div class="showcase-grid">
+            <article class="browser-shell reveal">
+              <div class="browser-top" aria-hidden="true"><span></span><span></span><span></span></div>
+              <div class="placeholder-shot">
+                <div class="placeholder-screen">预留后台门户截图<br />建议放管理员或企业工作台</div>
+                <div class="placeholder-meta"><span>展示重点</span><span>角色入口与菜单差异</span></div>
+              </div>
+            </article>
+            <article class="browser-shell reveal">
+              <div class="browser-top" aria-hidden="true"><span></span><span></span><span></span></div>
+              <div class="placeholder-shot">
+                <div class="placeholder-screen">预留品质评估 / 统计分析截图<br />建议放雷达图或统计图表页</div>
+                <div class="placeholder-meta"><span>展示重点</span><span>图表与评估结果</span></div>
+              </div>
+            </article>
+            <article class="browser-shell reveal">
+              <div class="browser-top" aria-hidden="true"><span></span><span></span><span></span></div>
+              <div class="placeholder-shot">
+                <div class="placeholder-screen">预留公开查询页截图<br />建议放二维码与查询结果页</div>
+                <div class="placeholder-meta"><span>展示重点</span><span>扫码溯源与消费者视角</span></div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===========================================
+           SLIDE 7: HIGHLIGHTS AND CONCLUSION
+           =========================================== -->
+      <section class="slide two-panel" data-title="亮点与总结">
+        <div class="slide-number">07 / 07</div>
+        <div class="light-side">
+          <div class="slide-content content-stack">
+            <p class="eyebrow reveal" style="color: var(--accent-blue);">Highlights</p>
+            <h2 class="section-title reveal">技术亮点与总结</h2>
+            <p class="lede reveal">
+              对毕业设计答辩来说，这个版本已经具备“能讲清需求、能展示流程、能对照开题、能做现场演示”的基本条件。
+            </p>
+            <div class="closing-list reveal">
+              <div>
+                <strong>评分规则可解释</strong>
+                外形、色泽、香气、滋味四项指标按固定权重计算综合得分，并自动映射品质等级。
+              </div>
+              <div>
+                <strong>图表与二维码增强可视化</strong>
+                统计分析图、品质雷达图和真实二维码，让系统更接近实际业务场景与答辩展示需求。
+              </div>
+              <div>
+                <strong>验证结果完整</strong>
+                文档中已给出后端测试、前端构建与联调验证结论，支撑项目讲解的可信度。
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dark-side">
+          <div class="slide-content closing-grid">
+            <div class="card-grid">
+              <article class="glass-card highlight-card reveal">
+                <strong>当前已完成</strong>
+                <p>溯源管理、品质评估、RBAC 角色区分、监管审核、统计接口与消费者公开查询均已具备演示基础。</p>
+              </article>
+              <article class="glass-card highlight-card reveal">
+                <strong>后续可优化</strong>
+                <p>可继续增加图片附件上传、细粒度筛选与分页、更完整的后台管理能力及自动化测试。</p>
+              </article>
+            </div>
+            <article class="glass-card highlight-card reveal" style="display: flex; flex-direction: column; justify-content: center;">
+              <strong>一句话总结</strong>
+              <p>
+                这是一个以茶叶溯源为主线、以品质评估和监管审核为支撑、以消费者公开查询为落点的多角色业务系统，已经具备较完整的毕业设计讲解价值。
+              </p>
+            </article>
+          </div>
+        </div>
+        <p class="footer-note micro">资料依据：README、答辩摘要、联调文档、前端路由与页面结构</p>
+      </section>
+    </main>
+
+    <script>
+      /* ===========================================
+         SLIDE PRESENTATION CONTROLLER
+         Keyboard, touch, wheel, progress, nav dots
+         =========================================== */
+      class SlidePresentation {
+        constructor() {
+          this.slides = Array.from(document.querySelectorAll(".slide"));
+          this.currentSlide = 0;
+          this.progressBar = document.getElementById("progressBar");
+          this.navDotsContainer = document.getElementById("navDots");
+          this.touchStartY = 0;
+          this.isThrottled = false;
+          this.setupIntersectionObserver();
+          this.setupKeyboardNav();
+          this.setupTouchNav();
+          this.setupWheelNav();
+          this.setupNavDots();
+          this.updateProgress();
+          this.slides[0]?.classList.add("visible");
+        }
+
+        setupIntersectionObserver() {
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                const index = this.slides.indexOf(entry.target);
+                if (index >= 0) {
+                  this.currentSlide = index;
+                  this.updateProgress();
+                  this.updateNavDots();
+                }
+                entry.target.classList.add("visible");
+              }
+            });
+          }, { threshold: 0.55 });
+
+          this.slides.forEach((slide) => observer.observe(slide));
+        }
+
+        setupKeyboardNav() {
+          document.addEventListener("keydown", (event) => {
+            if (["ArrowDown", "PageDown", " ", "ArrowRight"].includes(event.key)) {
+              event.preventDefault();
+              this.goToSlide(this.currentSlide + 1);
+            }
+            if (["ArrowUp", "PageUp", "ArrowLeft"].includes(event.key)) {
+              event.preventDefault();
+              this.goToSlide(this.currentSlide - 1);
+            }
+            if (event.key === "Home") {
+              event.preventDefault();
+              this.goToSlide(0);
+            }
+            if (event.key === "End") {
+              event.preventDefault();
+              this.goToSlide(this.slides.length - 1);
+            }
+          });
+        }
+
+        setupTouchNav() {
+          document.addEventListener("touchstart", (event) => {
+            this.touchStartY = event.changedTouches[0].clientY;
+          }, { passive: true });
+
+          document.addEventListener("touchend", (event) => {
+            const endY = event.changedTouches[0].clientY;
+            const deltaY = this.touchStartY - endY;
+            if (Math.abs(deltaY) < 50) return;
+            if (deltaY > 0) this.goToSlide(this.currentSlide + 1);
+            if (deltaY < 0) this.goToSlide(this.currentSlide - 1);
+          }, { passive: true });
+        }
+
+        setupWheelNav() {
+          window.addEventListener("wheel", (event) => {
+            if (this.isThrottled) return;
+            if (Math.abs(event.deltaY) < 25) return;
+            this.isThrottled = true;
+            if (event.deltaY > 0) this.goToSlide(this.currentSlide + 1);
+            if (event.deltaY < 0) this.goToSlide(this.currentSlide - 1);
+            window.setTimeout(() => {
+              this.isThrottled = false;
+            }, 700);
+          }, { passive: true });
+        }
+
+        setupNavDots() {
+          this.navDotsContainer.innerHTML = "";
+          this.slides.forEach((slide, index) => {
+            const dot = document.createElement("button");
+            dot.className = "nav-dot";
+            dot.type = "button";
+            dot.setAttribute("aria-label", `跳转到第 ${index + 1} 页：${slide.dataset.title || "幻灯片"}`);
+            dot.addEventListener("click", () => this.goToSlide(index));
+            this.navDotsContainer.appendChild(dot);
+          });
+          this.updateNavDots();
+        }
+
+        updateNavDots() {
+          const dots = this.navDotsContainer.querySelectorAll(".nav-dot");
+          dots.forEach((dot, index) => {
+            dot.classList.toggle("active", index === this.currentSlide);
+          });
+        }
+
+        updateProgress() {
+          if (!this.progressBar || this.slides.length <= 1) return;
+          const progress = (this.currentSlide / (this.slides.length - 1)) * 100;
+          this.progressBar.style.width = `${progress}%`;
+        }
+
+        goToSlide(index) {
+          const safeIndex = Math.max(0, Math.min(index, this.slides.length - 1));
+          this.slides[safeIndex]?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        new SlidePresentation();
+      });
+    </script>
+  </body>
+</html>

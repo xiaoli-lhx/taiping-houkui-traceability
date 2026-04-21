@@ -1,0 +1,147 @@
+:root {
+  color: #1f1f1f;
+  background: #f5f7fb;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(22, 119, 255, 0.12), transparent 28%),
+    linear-gradient(180deg, #f7f9fc 0%, #eef3fb 100%);
+}
+
+body {
+  min-width: 1280px;
+}
+
+a {
+  color: inherit;
+}
+
+.app-layout {
+  min-height: 100vh;
+}
+
+.app-sider {
+  border-right: 1px solid #f0f0f0;
+  box-shadow: 2px 0 12px rgba(15, 36, 99, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.sider-brand {
+  padding: 24px 20px 20px;
+}
+
+.sider-footer {
+  margin-top: auto;
+  padding: 20px;
+}
+
+.role-tag-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.app-header {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.app-content {
+  padding: 24px;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(15, 36, 99, 0.08);
+}
+
+.simple-login-card {
+  width: min(460px, 100%);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.login-footer-link {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.trace-code-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 24px;
+  align-items: center;
+}
+
+.qrcode-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 220px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #fafcff, #f1f5ff);
+  border: 1px solid #eef2ff;
+}
+
+.public-page-hero {
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.ant-card {
+  border-radius: 18px;
+}
+
+.ant-table-wrapper .ant-table {
+  border-radius: 12px;
+}
+
+.ant-descriptions-bordered .ant-descriptions-view {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ant-statistic {
+  text-align: center;
+}
+
+.ant-timeline .ant-timeline-item-content {
+  min-height: auto;
+}
+
+@media (max-width: 1400px) {
+  body {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 992px) {
+  .trace-code-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-content,
+  .app-header {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

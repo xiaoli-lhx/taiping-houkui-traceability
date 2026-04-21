@@ -1,0 +1,8 @@
+.env
+coverage.out
+tmp/
+bin/
+.claude-design/
+.idea/
+.vscode/
+*.log
