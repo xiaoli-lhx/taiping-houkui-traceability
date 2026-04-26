@@ -25,7 +25,7 @@ import { hasRole, withPortalPrefix } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
 import { EmptyState } from '../components/EmptyState'
 import { api } from '../lib/api'
-import { formatDateTime, getAuditStatusMeta, getBatchStatusMeta, getStageLabel } from '../lib/display'
+import { formatDateTime, getAuditStatusMeta, getBatchStatusMeta, getRectificationStatusMeta, getStageLabel } from '../lib/display'
 import type { AuditRecord, TeaBatch } from '../types'
 
 const initialStageForm = {
@@ -96,7 +96,11 @@ export function BatchDetailPage() {
   const canEditStage = hasRole(user, 'enterprise') || hasRole(user, 'farmer')
   const canCreateQuality = hasRole(user, 'enterprise') || hasRole(user, 'regulator')
   const canReview = hasRole(user, 'regulator')
-  const backPath = hasRole(user, 'regulator') ? '/regulator/reviews' : withPortalPrefix(user, '/batches')
+  const backPath = hasRole(user, 'admin')
+    ? '/admin'
+    : hasRole(user, 'regulator')
+      ? '/regulator/reviews'
+      : withPortalPrefix(user, '/batches')
 
   const auditColumns = useMemo(
     () => [
@@ -132,6 +136,9 @@ export function BatchDetailPage() {
               <Tag color={getBatchStatusMeta(batch?.status).color}>{getBatchStatusMeta(batch?.status).text}</Tag>
               <Tag color={getAuditStatusMeta(batch?.audit_status).color}>
                 {getAuditStatusMeta(batch?.audit_status).text}
+              </Tag>
+              <Tag color={getRectificationStatusMeta(batch?.rectification_status).color}>
+                {getRectificationStatusMeta(batch?.rectification_status).text}
               </Tag>
               <Tag>{batch?.latest_grade || '暂无等级'}</Tag>
             </Space>
@@ -177,6 +184,11 @@ export function BatchDetailPage() {
                 <Descriptions.Item label="采摘日期">{formatDateTime(batch.harvest_date)}</Descriptions.Item>
                 <Descriptions.Item label="包装日期">{formatDateTime(batch.packaging_date)}</Descriptions.Item>
                 <Descriptions.Item label="公开查询">{batch.public_visible ? '是' : '否'}</Descriptions.Item>
+                <Descriptions.Item label="整改状态">
+                  <Tag color={getRectificationStatusMeta(batch.rectification_status).color}>
+                    {getRectificationStatusMeta(batch.rectification_status).text}
+                  </Tag>
+                </Descriptions.Item>
                 <Descriptions.Item label="备注" span={2}>
                   {batch.notes || '-'}
                 </Descriptions.Item>

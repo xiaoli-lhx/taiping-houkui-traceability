@@ -55,3 +55,12 @@ func (h *StatisticsHandler) MetricTrends(c *gin.Context) {
 	}
 	responsex.Success(c, items)
 }
+
+func (h *StatisticsHandler) RiskAlerts(c *gin.Context) {
+	items, err := h.statsService.GetRiskAlerts()
+	if err != nil {
+		responsex.Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	responsex.Success(c, items)
+}

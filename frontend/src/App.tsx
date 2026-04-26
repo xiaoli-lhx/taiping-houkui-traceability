@@ -4,6 +4,8 @@ import { getDefaultRoute } from './auth/roles'
 import { useAuth } from './auth/useAuth'
 import { AppShell } from './components/AppShell'
 import { RoleGuard } from './components/RoleGuard'
+import { AdminHomePage } from './pages/AdminHomePage'
+import { AdminFeedbackPage } from './pages/AdminFeedbackPage'
 import { AdminRegistrationsPage } from './pages/AdminRegistrationsPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
 import { BatchDetailPage } from './pages/BatchDetailPage'
@@ -17,6 +19,7 @@ import { ProfilePage } from './pages/ProfilePage'
 import { PublicQueryPage } from './pages/PublicQueryPage'
 import { QualityEvaluationPage } from './pages/QualityEvaluationPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { RectificationPage } from './pages/RectificationPage'
 import { ReviewPage } from './pages/ReviewPage'
 import { StatsPage } from './pages/StatsPage'
 
@@ -35,14 +38,7 @@ function ProtectedRoutes() {
           path="/admin"
           element={
             <RoleGuard allowedRoles={['admin']}>
-              <PortalHomePage
-                title="管理员工作台"
-                description="管理员负责审核注册申请、维护账号状态和查看系统全局用户概况。"
-                shortcuts={[
-                  { label: '注册申请审核', to: '/registrations' },
-                  { label: '用户管理', to: '/users' },
-                ]}
-              />
+              <AdminHomePage />
             </RoleGuard>
           }
         />
@@ -62,6 +58,22 @@ function ProtectedRoutes() {
             </RoleGuard>
           }
         />
+        <Route
+          path="/admin/feedback"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <AdminFeedbackPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/batches/:id"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <BatchDetailPage />
+            </RoleGuard>
+          }
+        />
 
         <Route
           path="/farmer"
@@ -72,6 +84,7 @@ function ProtectedRoutes() {
                 description="茶农可查看与自己相关的批次，并补录种植、采摘等生产阶段信息。"
                 shortcuts={[
                   { label: '我的批次', to: '/batches' },
+                  { label: '整改任务', to: '/rectifications' },
                   { label: '个人中心', to: '/profile' },
                 ]}
               />
@@ -94,6 +107,14 @@ function ProtectedRoutes() {
             </RoleGuard>
           }
         />
+        <Route
+          path="/farmer/rectifications"
+          element={
+            <RoleGuard allowedRoles={['farmer']}>
+              <RectificationPage />
+            </RoleGuard>
+          }
+        />
 
         <Route
           path="/enterprise"
@@ -104,10 +125,19 @@ function ProtectedRoutes() {
                 description="企业可创建批次、维护加工包装流通信息，并发起品质评估与查看统计分析。"
                 shortcuts={[
                   { label: '批次管理', to: '/batches' },
+                  { label: '整改任务', to: '/rectifications' },
                   { label: '品质评估', to: '/quality/new' },
                   { label: '统计分析', to: '/stats' },
                 ]}
               />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/enterprise/rectifications"
+          element={
+            <RoleGuard allowedRoles={['enterprise']}>
+              <RectificationPage />
             </RoleGuard>
           }
         />

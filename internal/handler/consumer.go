@@ -91,6 +91,15 @@ func (h *ConsumerHandler) CreateFeedback(c *gin.Context) {
 	responsex.Created(c, item)
 }
 
+func (h *ConsumerHandler) ListFeedback(c *gin.Context) {
+	items, err := h.consumerService.ListFeedback(currentOperator(c).UserID)
+	if err != nil {
+		responsex.Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	responsex.Success(c, items)
+}
+
 func (h *ConsumerHandler) ListHistory(c *gin.Context) {
 	items, err := h.consumerService.ListHistory(currentOperator(c).UserID)
 	if err != nil {

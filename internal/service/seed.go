@@ -16,21 +16,22 @@ type demoUserSeed struct {
 }
 
 type demoBatchSeed struct {
-	BatchCode      string
-	TraceCode      string
-	ProductCode    string
-	Origin         string
-	FarmName       string
-	EnterpriseName string
-	QuantityKg     float64
-	HarvestDate    time.Time
-	PackagingDate  time.Time
-	PublicVisible  bool
-	Status         string
-	AuditStatus    string
-	AuditComment   string
-	Metrics        []MetricInput
-	EvaluatedAt    time.Time
+	BatchCode           string
+	TraceCode           string
+	ProductCode         string
+	Origin              string
+	FarmName            string
+	EnterpriseName      string
+	QuantityKg          float64
+	HarvestDate         time.Time
+	PackagingDate       time.Time
+	PublicVisible       bool
+	Status              string
+	AuditStatus         string
+	RectificationStatus string
+	AuditComment        string
+	Metrics             []MetricInput
+	EvaluatedAt         time.Time
 }
 
 func SeedDemoData(db *gorm.DB, qualityService *QualityService) error {
@@ -45,19 +46,20 @@ func SeedDemoData(db *gorm.DB, qualityService *QualityService) error {
 
 	seeds := []demoBatchSeed{
 		{
-			BatchCode:      "HK202603-001",
-			TraceCode:      "TRACE-HK202603-001",
-			ProductCode:    "TPHK-001",
-			Origin:         "安徽省黄山市黄山区猴坑村",
-			FarmName:       "猴坑示范茶园",
-			EnterpriseName: "黄山猴魁茶业有限公司",
-			QuantityKg:     120.5,
-			HarvestDate:    time.Now().AddDate(0, 0, -15),
-			PackagingDate:  time.Now().AddDate(0, 0, -10),
-			PublicVisible:  true,
-			Status:         model.BatchStatusCompleted,
-			AuditStatus:    model.AuditStatusApproved,
-			AuditComment:   "批次信息完整，允许公开查询。",
+			BatchCode:           "HK202603-001",
+			TraceCode:           "TRACE-HK202603-001",
+			ProductCode:         "TPHK-001",
+			Origin:              "安徽省黄山市黄山区猴坑村",
+			FarmName:            "猴坑示范茶园",
+			EnterpriseName:      "黄山猴魁茶业有限公司",
+			QuantityKg:          120.5,
+			HarvestDate:         time.Now().AddDate(0, 0, -15),
+			PackagingDate:       time.Now().AddDate(0, 0, -10),
+			PublicVisible:       true,
+			Status:              model.BatchStatusCompleted,
+			AuditStatus:         model.AuditStatusApproved,
+			RectificationStatus: model.RectificationStatusNone,
+			AuditComment:        "批次信息完整，允许公开查询。",
 			Metrics: []MetricInput{
 				{MetricName: "appearance", Score: 94, Comment: "两叶抱芽较匀整"},
 				{MetricName: "color", Score: 91, Comment: "色泽翠绿润亮"},
@@ -67,24 +69,25 @@ func SeedDemoData(db *gorm.DB, qualityService *QualityService) error {
 			EvaluatedAt: time.Now().AddDate(0, 0, -9),
 		},
 		{
-			BatchCode:      "HK202603-002",
-			TraceCode:      "TRACE-HK202603-002",
-			ProductCode:    "TPHK-002",
-			Origin:         "安徽省黄山市黄山区新明乡",
-			FarmName:       "新明生态茶园",
-			EnterpriseName: "黄山猴魁茶业有限公司",
-			QuantityKg:     88.0,
-			HarvestDate:    time.Now().AddDate(0, 0, -12),
-			PackagingDate:  time.Now().AddDate(0, 0, -7),
-			PublicVisible:  true,
-			Status:         model.BatchStatusCompleted,
-			AuditStatus:    model.AuditStatusApproved,
-			AuditComment:   "抽检通过，品质等级正常。",
+			BatchCode:           "HK202603-002",
+			TraceCode:           "TRACE-HK202603-002",
+			ProductCode:         "TPHK-002",
+			Origin:              "安徽省黄山市黄山区新明乡",
+			FarmName:            "新明生态茶园",
+			EnterpriseName:      "黄山猴魁茶业有限公司",
+			QuantityKg:          88.0,
+			HarvestDate:         time.Now().AddDate(0, 0, -12),
+			PackagingDate:       time.Now().AddDate(0, 0, -7),
+			PublicVisible:       true,
+			Status:              model.BatchStatusCompleted,
+			AuditStatus:         model.AuditStatusPending,
+			RectificationStatus: model.RectificationStatusSubmitted,
+			AuditComment:        "加工记录缺少批次封装说明，请整改后复审。",
 			Metrics: []MetricInput{
-				{MetricName: "appearance", Score: 85, Comment: "条索较挺直"},
-				{MetricName: "color", Score: 82, Comment: "色泽较匀"},
-				{MetricName: "aroma", Score: 84, Comment: "香气清鲜"},
-				{MetricName: "taste", Score: 81, Comment: "滋味醇和"},
+				{MetricName: "appearance", Score: 74, Comment: "条索整齐度一般"},
+				{MetricName: "color", Score: 70, Comment: "色泽均匀性不足"},
+				{MetricName: "aroma", Score: 73, Comment: "香气表现偏弱"},
+				{MetricName: "taste", Score: 71, Comment: "滋味鲜爽度有待提升"},
 			},
 			EvaluatedAt: time.Now().AddDate(0, 0, -6),
 		},
@@ -96,7 +99,7 @@ func SeedDemoData(db *gorm.DB, qualityService *QualityService) error {
 		}
 	}
 
-	return nil
+	return seedDemoFeedback(db, users)
 }
 
 func seedRoles(db *gorm.DB) error {
@@ -179,25 +182,34 @@ func seedDemoBatch(db *gorm.DB, qualityService *QualityService, seed demoBatchSe
 	}
 	if batch.ID == 0 {
 		batch = model.TeaBatch{
-			BatchCode:      seed.BatchCode,
-			TraceCode:      seed.TraceCode,
-			ProductCode:    seed.ProductCode,
-			TeaName:        "太平猴魁",
-			TeaType:        "绿茶",
-			Origin:         seed.Origin,
-			FarmName:       seed.FarmName,
-			EnterpriseName: seed.EnterpriseName,
-			QuantityKg:     seed.QuantityKg,
-			HarvestDate:    &seed.HarvestDate,
-			PackagingDate:  &seed.PackagingDate,
-			Status:         seed.Status,
-			AuditStatus:    seed.AuditStatus,
-			PublicVisible:  seed.PublicVisible,
-			CreatedBy:      users["enterprise_demo"].ID,
+			BatchCode:           seed.BatchCode,
+			TraceCode:           seed.TraceCode,
+			ProductCode:         seed.ProductCode,
+			TeaName:             "太平猴魁",
+			TeaType:             "绿茶",
+			Origin:              seed.Origin,
+			FarmName:            seed.FarmName,
+			EnterpriseName:      seed.EnterpriseName,
+			QuantityKg:          seed.QuantityKg,
+			HarvestDate:         &seed.HarvestDate,
+			PackagingDate:       &seed.PackagingDate,
+			Status:              seed.Status,
+			AuditStatus:         seed.AuditStatus,
+			RectificationStatus: seed.RectificationStatus,
+			PublicVisible:       seed.PublicVisible,
+			CreatedBy:           users["enterprise_demo"].ID,
 		}
 		if err := db.Create(&batch).Error; err != nil {
 			return err
 		}
+	}
+	if err := db.Model(&model.TeaBatch{}).Where("id = ?", batch.ID).Updates(map[string]any{
+		"audit_status":         seed.AuditStatus,
+		"rectification_status": seed.RectificationStatus,
+		"public_visible":       seed.PublicVisible,
+		"status":               seed.Status,
+	}).Error; err != nil {
+		return err
 	}
 
 	var stageCount int64
@@ -293,23 +305,119 @@ func seedDemoBatch(db *gorm.DB, qualityService *QualityService, seed demoBatchSe
 	if err := db.Model(&model.AuditRecord{}).Where("batch_id = ?", batch.ID).Count(&auditCount).Error; err != nil {
 		return err
 	}
+	var lastAudit model.AuditRecord
 	if auditCount == 0 {
+		auditStatus := seed.AuditStatus
+		auditAction := "initial_review"
+		if seed.RectificationStatus != model.RectificationStatusNone {
+			auditStatus = model.AuditStatusRejected
+			auditAction = "issue_review"
+		}
 		audit := model.AuditRecord{
 			BatchID:      batch.ID,
 			ReviewerID:   users["regulator_demo"].ID,
 			ReviewerName: users["regulator_demo"].DisplayName,
-			Action:       "initial_review",
-			Status:       seed.AuditStatus,
+			Action:       auditAction,
+			Status:       auditStatus,
 			Comment:      seed.AuditComment,
 			ReviewedAt:   seed.PackagingDate.AddDate(0, 0, 1),
 		}
 		if err := db.Create(&audit).Error; err != nil {
 			return err
 		}
-		if err := db.Model(&model.TeaBatch{}).Where("id = ?", batch.ID).Update("audit_status", seed.AuditStatus).Error; err != nil {
+		lastAudit = audit
+	} else {
+		if err := db.Where("batch_id = ?", batch.ID).Order("reviewed_at DESC, id DESC").First(&lastAudit).Error; err != nil {
+			return err
+		}
+	}
+
+	if seed.RectificationStatus != model.RectificationStatusNone {
+		if err := seedRectificationTask(db, batch.ID, seed, users, &lastAudit); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func seedRectificationTask(db *gorm.DB, batchID uint, seed demoBatchSeed, users map[string]model.User, sourceAudit *model.AuditRecord) error {
+	var taskCount int64
+	if err := db.Model(&model.RectificationTask{}).Where("batch_id = ?", batchID).Count(&taskCount).Error; err != nil {
+		return err
+	}
+	if taskCount > 0 {
+		return db.Model(&model.RectificationTask{}).Where("batch_id = ?", batchID).Updates(map[string]any{
+			"status": seed.RectificationStatus,
+		}).Error
+	}
+
+	var stage model.TraceStageRecord
+	if err := db.Where("batch_id = ? AND stage = ?", batchID, model.StagePackaging).First(&stage).Error; err != nil {
+		return err
+	}
+
+	submittedAt := seed.PackagingDate.AddDate(0, 0, 2)
+	task := model.RectificationTask{
+		BatchID:         batchID,
+		StageRecordID:   &stage.ID,
+		SourceAuditID:   sourceAudit.ID,
+		ResponsibleRole: model.RoleEnterprise,
+		Status:          seed.RectificationStatus,
+		IssueSummary:    seed.AuditComment,
+		RequiredAction:  "请补充包装阶段说明并重新提交监管复审。",
+		ReviewerComment: seed.AuditComment,
+	}
+	if seed.RectificationStatus == model.RectificationStatusSubmitted {
+		submittedBy := users["enterprise_demo"].ID
+		task.ResponseComment = "已补充包装批次封装说明和台账截图，请监管复审。"
+		task.SubmittedBy = &submittedBy
+		task.SubmittedAt = &submittedAt
+	}
+
+	return db.Create(&task).Error
+}
+
+func seedDemoFeedback(db *gorm.DB, users map[string]model.User) error {
+	var batch model.TeaBatch
+	if err := db.Where("batch_code = ?", "HK202603-002").First(&batch).Error; err != nil {
+		return err
+	}
+
+	var count int64
+	if err := db.Model(&model.UserFeedback{}).Where("batch_id = ?", batch.ID).Count(&count).Error; err != nil {
+		return err
+	}
+	if count >= 3 {
+		return nil
+	}
+
+	feedbacks := []model.UserFeedback{
+		{
+			UserID:      users["consumer_demo"].ID,
+			BatchID:     &batch.ID,
+			TraceCode:   batch.TraceCode,
+			Content:     "查询信息里包装说明较少，希望补充更完整的工艺介绍。",
+			ContactInfo: "consumer_demo",
+			Status:      model.FeedbackStatusPending,
+		},
+		{
+			UserID:      users["consumer_demo"].ID,
+			BatchID:     &batch.ID,
+			TraceCode:   batch.TraceCode,
+			Content:     "该批次品质评分偏低，想了解是否已经整改。",
+			ContactInfo: "consumer_demo",
+			Status:      model.FeedbackStatusProcessing,
+		},
+		{
+			UserID:      users["consumer_demo"].ID,
+			BatchID:     &batch.ID,
+			TraceCode:   batch.TraceCode,
+			Content:     "希望增加加工环节的图片或凭证说明。",
+			ContactInfo: "consumer_demo",
+			Status:      model.FeedbackStatusPending,
+		},
+	}
+
+	return db.Create(&feedbacks).Error
 }

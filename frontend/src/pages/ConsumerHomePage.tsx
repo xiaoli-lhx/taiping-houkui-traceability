@@ -12,13 +12,15 @@ export function ConsumerHomePage() {
   const { token } = useAuth()
   const [favoriteCount, setFavoriteCount] = useState(0)
   const [historyCount, setHistoryCount] = useState(0)
+  const [feedbackCount, setFeedbackCount] = useState(0)
   const [historyItems, setHistoryItems] = useState<ConsumerQueryHistory[]>([])
 
   useEffect(() => {
     async function load() {
-      const [favorites, history] = await Promise.all([api.getFavorites(token), api.getHistory(token)])
+      const [favorites, history, feedback] = await Promise.all([api.getFavorites(token), api.getHistory(token), api.getConsumerFeedback(token)])
       setFavoriteCount(favorites.length)
       setHistoryCount(history.length)
+      setFeedbackCount(feedback.filter((item) => item.status !== 'resolved').length)
       setHistoryItems(history.slice(0, 5))
     }
     void load()
@@ -43,6 +45,11 @@ export function ConsumerHomePage() {
         <Col xs={24} md={12}>
           <Card>
             <Statistic title="查询历史数" value={historyCount} />
+          </Card>
+        </Col>
+        <Col xs={24} md={12}>
+          <Card>
+            <Statistic title="处理中反馈数" value={feedbackCount} />
           </Card>
         </Col>
       </Row>

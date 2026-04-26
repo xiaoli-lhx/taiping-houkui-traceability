@@ -49,6 +49,9 @@ func (s *ConsumerService) CreateFavorite(input CreateFavoriteInput) (*FavoriteVi
 	if err := s.db.First(&batch, input.BatchID).Error; err != nil {
 		return nil, err
 	}
+	if !batch.PublicVisible {
+		return nil, errors.New("当前批次未开放消费者收藏")
+	}
 
 	var favorite model.ConsumerFavorite
 	if err := s.db.Where("user_id = ? AND batch_id = ?", input.UserID, input.BatchID).Limit(1).Find(&favorite).Error; err != nil {
@@ -106,11 +109,20 @@ func (s *ConsumerService) CreateFeedback(input CreateFeedbackInput) (*model.User
 		TraceCode:   strings.TrimSpace(input.TraceCode),
 		Content:     strings.TrimSpace(input.Content),
 		ContactInfo: strings.TrimSpace(input.ContactInfo),
+		Status:      model.FeedbackStatusPending,
 	}
 	if err := s.db.Create(&feedback).Error; err != nil {
 		return nil, err
 	}
 	return &feedback, nil
+}
+
+func (s *ConsumerService) ListFeedback(userID uint) ([]model.UserFeedback, error) {
+	var items []model.UserFeedback
+	if err := s.db.Where("user_id = ?", userID).Order("created_at DESC, id DESC").Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 func (s *ConsumerService) ListHistory(userID uint) ([]model.ConsumerQueryHistory, error) {

@@ -4,11 +4,13 @@ import {
   BarChartOutlined,
   HomeOutlined,
   LogoutOutlined,
+  MessageOutlined,
   SearchOutlined,
   SettingOutlined,
   StarOutlined,
   TagsOutlined,
   TeamOutlined,
+  ToolOutlined,
   TrophyOutlined,
   UserOutlined,
 } from '@ant-design/icons'
@@ -17,6 +19,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import { getPortalPrefix, getRoleLabel, hasRole } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
+import { getAuditStatusMeta } from '../lib/display'
 
 export function AppShell() {
   const { user, logout } = useAuth()
@@ -30,6 +33,7 @@ export function AppShell() {
         { key: '/admin', icon: <HomeOutlined />, label: '管理员首页' },
         { key: '/admin/registrations', icon: <AuditOutlined />, label: '注册审核' },
         { key: '/admin/users', icon: <TeamOutlined />, label: '用户管理' },
+        { key: '/admin/feedback', icon: <MessageOutlined />, label: '反馈处理' },
         { key: '/profile', icon: <SettingOutlined />, label: '个人中心' },
       ]
     }
@@ -37,6 +41,7 @@ export function AppShell() {
       return [
         { key: '/enterprise', icon: <HomeOutlined />, label: '企业首页' },
         { key: '/enterprise/batches', icon: <TagsOutlined />, label: '批次管理' },
+        { key: '/enterprise/rectifications', icon: <ToolOutlined />, label: '整改任务' },
         { key: '/enterprise/quality/new', icon: <TrophyOutlined />, label: '品质评估' },
         { key: '/enterprise/stats', icon: <BarChartOutlined />, label: '统计分析' },
         { key: '/profile', icon: <SettingOutlined />, label: '个人中心' },
@@ -46,6 +51,7 @@ export function AppShell() {
       return [
         { key: '/farmer', icon: <HomeOutlined />, label: '茶农首页' },
         { key: '/farmer/batches', icon: <TagsOutlined />, label: '我的批次' },
+        { key: '/farmer/rectifications', icon: <ToolOutlined />, label: '整改任务' },
         { key: '/profile', icon: <SettingOutlined />, label: '个人中心' },
       ]
     }
@@ -74,9 +80,12 @@ export function AppShell() {
       .sort((left, right) => right.key.length - left.key.length)
       .find((item) => location.pathname.startsWith(item.key))?.key ?? location.pathname
 
+  const approvalMeta = getAuditStatusMeta(user?.approval_status)
+  const isAdminShell = hasRole(user, 'admin')
+
   return (
-    <Layout className="app-layout">
-      <Sider width={248} theme="light" className="app-sider">
+    <Layout className={`app-layout ${isAdminShell ? 'app-layout--admin' : ''}`}>
+      <Sider width={248} theme="light" className={`app-sider ${isAdminShell ? 'app-sider--admin' : ''}`}>
         <div className="sider-brand">
           <Typography.Text type="secondary">Tea Traceability System</Typography.Text>
           <Typography.Title level={4} style={{ margin: '6px 0 0' }}>
@@ -108,9 +117,7 @@ export function AppShell() {
             </Space>
             <div className="role-tag-wrap">
               <Tag color="blue">{getRoleLabel(user?.role_code || '')}</Tag>
-              <Tag color={user?.approval_status === 'approved' ? 'success' : user?.approval_status === 'rejected' ? 'error' : 'processing'}>
-                {user?.approval_status || '-'}
-              </Tag>
+              <Tag color={approvalMeta.color}>{approvalMeta.text}</Tag>
             </div>
             <Button icon={<LogoutOutlined />} onClick={logout}>
               退出登录
@@ -120,16 +127,24 @@ export function AppShell() {
       </Sider>
 
       <Layout>
-        <Header className="app-header">
-          <Space direction="vertical" size={0}>
-            <Typography.Title level={3} style={{ margin: 0 }}>
-              {navItems.find((item) => item.key === selectedKey)?.label ?? '系统首页'}
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              {getPortalPrefix(user) ? `当前已进入 ${getRoleLabel(user?.role_code || '')} 专属门户` : '系统页面'}
-            </Typography.Text>
-          </Space>
-          <Link to="/public-query">匿名公开查询</Link>
+        <Header className={`app-header ${isAdminShell ? 'app-header--admin' : ''}`}>
+          <div className="app-header-main">
+            <Space direction="vertical" size={0}>
+              <Typography.Title level={3} style={{ margin: 0 }}>
+                {navItems.find((item) => item.key === selectedKey)?.label ?? '系统首页'}
+              </Typography.Title>
+              <Typography.Text type="secondary">
+                {getPortalPrefix(user) ? `当前已进入 ${getRoleLabel(user?.role_code || '')} 专属门户` : '系统页面'}
+              </Typography.Text>
+            </Space>
+            <div className="app-header-tags">
+              <Tag color="blue">{getRoleLabel(user?.role_code || '')}</Tag>
+              <Tag color={approvalMeta.color}>{approvalMeta.text}</Tag>
+            </div>
+          </div>
+          <Link to="/public-query" className="app-header-link">
+            匿名公开查询
+          </Link>
         </Header>
         <Content className="app-content">
           <Outlet />

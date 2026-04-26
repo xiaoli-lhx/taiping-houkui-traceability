@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -21,6 +22,18 @@ var stageAliases = map[string]string{
 	"包装":           model.StagePackaging,
 	"distribution": model.StageDistribution,
 	"流通":           model.StageDistribution,
+}
+
+var stageRolePermissions = map[string]map[string]struct{}{
+	model.RoleFarmer: {
+		model.StagePlanting: {},
+		model.StagePicking:  {},
+	},
+	model.RoleEnterprise: {
+		model.StageProcessing:   {},
+		model.StagePackaging:    {},
+		model.StageDistribution: {},
+	},
 }
 
 type TraceService struct {
@@ -72,21 +85,36 @@ type AuditInput struct {
 	Comment       string
 }
 
+type RectificationListFilter struct {
+	Status   string
+	Operator OperatorContext
+}
+
+type RectificationSubmitInput struct {
+	ResponseComment string
+}
+
+type RectificationReviewInput struct {
+	Status          string
+	ReviewerComment string
+}
+
 type PublicBatchSummary struct {
-	ID             uint       `json:"id"`
-	BatchCode      string     `json:"batch_code"`
-	TraceCode      string     `json:"trace_code"`
-	ProductCode    string     `json:"product_code"`
-	TeaName        string     `json:"tea_name"`
-	TeaType        string     `json:"tea_type"`
-	Origin         string     `json:"origin"`
-	FarmName       string     `json:"farm_name"`
-	EnterpriseName string     `json:"enterprise_name"`
-	QuantityKg     float64    `json:"quantity_kg"`
-	HarvestDate    *time.Time `json:"harvest_date,omitempty"`
-	PackagingDate  *time.Time `json:"packaging_date,omitempty"`
-	AuditStatus    string     `json:"audit_status"`
-	LatestGrade    string     `json:"latest_grade"`
+	ID                  uint       `json:"id"`
+	BatchCode           string     `json:"batch_code"`
+	TraceCode           string     `json:"trace_code"`
+	ProductCode         string     `json:"product_code"`
+	TeaName             string     `json:"tea_name"`
+	TeaType             string     `json:"tea_type"`
+	Origin              string     `json:"origin"`
+	FarmName            string     `json:"farm_name"`
+	EnterpriseName      string     `json:"enterprise_name"`
+	QuantityKg          float64    `json:"quantity_kg"`
+	HarvestDate         *time.Time `json:"harvest_date,omitempty"`
+	PackagingDate       *time.Time `json:"packaging_date,omitempty"`
+	AuditStatus         string     `json:"audit_status"`
+	RectificationStatus string     `json:"rectification_status"`
+	LatestGrade         string     `json:"latest_grade"`
 }
 
 type PublicTraceView struct {
@@ -156,23 +184,28 @@ func (s *TraceService) CanAccessBatch(batch *model.TeaBatch, operator OperatorCo
 }
 
 func (s *TraceService) CreateBatch(input BatchUpsertInput, operator OperatorContext) (*model.TeaBatch, error) {
+	if operator.PrimaryRole() != model.RoleEnterprise {
+		return nil, errors.New("当前角色无权创建批次")
+	}
+
 	batch := model.TeaBatch{
-		BatchCode:      strings.TrimSpace(input.BatchCode),
-		TraceCode:      strings.TrimSpace(input.TraceCode),
-		ProductCode:    strings.TrimSpace(input.ProductCode),
-		TeaName:        defaultTeaName(input.TeaName),
-		TeaType:        defaultTeaType(input.TeaType),
-		Origin:         strings.TrimSpace(input.Origin),
-		FarmName:       strings.TrimSpace(input.FarmName),
-		EnterpriseName: strings.TrimSpace(input.EnterpriseName),
-		QuantityKg:     round2(input.QuantityKg),
-		HarvestDate:    input.HarvestDate,
-		PackagingDate:  input.PackagingDate,
-		Status:         defaultBatchStatus(input.Status),
-		AuditStatus:    model.AuditStatusPending,
-		PublicVisible:  input.PublicVisible,
-		Notes:          strings.TrimSpace(input.Notes),
-		CreatedBy:      operator.UserID,
+		BatchCode:           strings.TrimSpace(input.BatchCode),
+		TraceCode:           strings.TrimSpace(input.TraceCode),
+		ProductCode:         strings.TrimSpace(input.ProductCode),
+		TeaName:             defaultTeaName(input.TeaName),
+		TeaType:             defaultTeaType(input.TeaType),
+		Origin:              strings.TrimSpace(input.Origin),
+		FarmName:            strings.TrimSpace(input.FarmName),
+		EnterpriseName:      strings.TrimSpace(defaultOrganization(input.EnterpriseName, operator.OrganizationName())),
+		QuantityKg:          round2(input.QuantityKg),
+		HarvestDate:         input.HarvestDate,
+		PackagingDate:       input.PackagingDate,
+		Status:              defaultBatchStatus(input.Status),
+		AuditStatus:         model.AuditStatusPending,
+		RectificationStatus: model.RectificationStatusNone,
+		PublicVisible:       input.PublicVisible,
+		Notes:               strings.TrimSpace(input.Notes),
+		CreatedBy:           operator.UserID,
 	}
 
 	if batch.TraceCode == "" {
@@ -186,10 +219,17 @@ func (s *TraceService) CreateBatch(input BatchUpsertInput, operator OperatorCont
 	return &batch, nil
 }
 
-func (s *TraceService) UpdateBatch(id uint, input BatchUpsertInput) (*model.TeaBatch, error) {
+func (s *TraceService) UpdateBatch(id uint, input BatchUpsertInput, operator OperatorContext) (*model.TeaBatch, error) {
+	if operator.PrimaryRole() != model.RoleEnterprise {
+		return nil, errors.New("当前角色无权修改批次")
+	}
+
 	var batch model.TeaBatch
 	if err := s.db.First(&batch, id).Error; err != nil {
 		return nil, err
+	}
+	if !s.CanAccessBatch(&batch, operator) {
+		return nil, errors.New("当前账号无权修改该批次")
 	}
 
 	batch.BatchCode = strings.TrimSpace(input.BatchCode)
@@ -202,7 +242,7 @@ func (s *TraceService) UpdateBatch(id uint, input BatchUpsertInput) (*model.TeaB
 	batch.TeaType = defaultTeaType(input.TeaType)
 	batch.Origin = strings.TrimSpace(input.Origin)
 	batch.FarmName = strings.TrimSpace(input.FarmName)
-	batch.EnterpriseName = strings.TrimSpace(input.EnterpriseName)
+	batch.EnterpriseName = strings.TrimSpace(defaultOrganization(input.EnterpriseName, operator.OrganizationName()))
 	batch.QuantityKg = round2(input.QuantityKg)
 	batch.HarvestDate = input.HarvestDate
 	batch.PackagingDate = input.PackagingDate
@@ -232,6 +272,11 @@ func (s *TraceService) GetBatch(id uint) (*model.TeaBatch, error) {
 		Preload("AuditRecords", func(db *gorm.DB) *gorm.DB {
 			return db.Order("reviewed_at DESC, id DESC")
 		}).
+		Preload("RectificationTasks", func(db *gorm.DB) *gorm.DB {
+			return db.Order("updated_at DESC, id DESC")
+		}).
+		Preload("RectificationTasks.StageRecord").
+		Preload("RectificationTasks.SourceAudit").
 		First(&batch, id).Error; err != nil {
 		return nil, err
 	}
@@ -240,13 +285,20 @@ func (s *TraceService) GetBatch(id uint) (*model.TeaBatch, error) {
 }
 
 func (s *TraceService) CreateStage(batchID uint, input StageUpsertInput, operator OperatorContext) (*model.TraceStageRecord, error) {
-	if err := s.db.First(&model.TeaBatch{}, batchID).Error; err != nil {
+	var batch model.TeaBatch
+	if err := s.db.First(&batch, batchID).Error; err != nil {
 		return nil, err
+	}
+	if !s.CanAccessBatch(&batch, operator) {
+		return nil, errors.New("当前账号无权为该批次新增阶段")
 	}
 
 	stageName := normalizeStage(input.Stage)
 	if stageName == "" {
 		return nil, fmt.Errorf("阶段类型不合法")
+	}
+	if !canManageStage(operator.PrimaryRole(), stageName) {
+		return nil, errors.New("当前角色无权维护该阶段")
 	}
 
 	sequence := input.Sequence
@@ -289,9 +341,20 @@ func (s *TraceService) UpdateStage(id uint, input StageUpsertInput, operator Ope
 		return nil, err
 	}
 
+	var batch model.TeaBatch
+	if err := s.db.First(&batch, stage.BatchID).Error; err != nil {
+		return nil, err
+	}
+	if !s.CanAccessBatch(&batch, operator) {
+		return nil, errors.New("当前账号无权修改该阶段")
+	}
+
 	stageName := normalizeStage(input.Stage)
 	if stageName == "" {
 		return nil, fmt.Errorf("阶段类型不合法")
+	}
+	if !canManageStage(operator.PrimaryRole(), stage.Stage) || !canManageStage(operator.PrimaryRole(), stageName) {
+		return nil, errors.New("当前角色无权维护该阶段")
 	}
 
 	stage.Stage = stageName
@@ -314,7 +377,23 @@ func (s *TraceService) UpdateStage(id uint, input StageUpsertInput, operator Ope
 	return &stage, nil
 }
 
-func (s *TraceService) DeleteStage(id uint) error {
+func (s *TraceService) DeleteStage(id uint, operator OperatorContext) error {
+	var stage model.TraceStageRecord
+	if err := s.db.First(&stage, id).Error; err != nil {
+		return err
+	}
+
+	var batch model.TeaBatch
+	if err := s.db.First(&batch, stage.BatchID).Error; err != nil {
+		return err
+	}
+	if !s.CanAccessBatch(&batch, operator) {
+		return errors.New("当前账号无权删除该阶段")
+	}
+	if !canManageStage(operator.PrimaryRole(), stage.Stage) {
+		return errors.New("当前角色无权删除该阶段")
+	}
+
 	result := s.db.Delete(&model.TraceStageRecord{}, id)
 	if result.Error != nil {
 		return result.Error
@@ -334,18 +413,25 @@ func (s *TraceService) ListAudits(batchID uint) ([]model.AuditRecord, error) {
 }
 
 func (s *TraceService) CreateAudit(batchID uint, input AuditInput, operator OperatorContext) (*model.AuditRecord, error) {
-	if err := s.db.First(&model.TeaBatch{}, batchID).Error; err != nil {
+	if operator.PrimaryRole() != model.RoleRegulator {
+		return nil, errors.New("当前角色无权执行审核")
+	}
+
+	var batch model.TeaBatch
+	if err := s.db.First(&batch, batchID).Error; err != nil {
 		return nil, err
 	}
 
+	var stage *model.TraceStageRecord
 	if input.StageRecordID != nil {
-		var stage model.TraceStageRecord
-		if err := s.db.First(&stage, *input.StageRecordID).Error; err != nil {
+		item := &model.TraceStageRecord{}
+		if err := s.db.First(item, *input.StageRecordID).Error; err != nil {
 			return nil, err
 		}
-		if stage.BatchID != batchID {
+		if item.BatchID != batchID {
 			return nil, fmt.Errorf("审核阶段记录与批次不匹配")
 		}
+		stage = item
 	}
 
 	audit := model.AuditRecord{
@@ -359,15 +445,165 @@ func (s *TraceService) CreateAudit(batchID uint, input AuditInput, operator Oper
 		ReviewedAt:    time.Now(),
 	}
 
-	if err := s.db.Create(&audit).Error; err != nil {
-		return nil, err
-	}
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&audit).Error; err != nil {
+			return err
+		}
 
-	if err := s.db.Model(&model.TeaBatch{}).Where("id = ?", batchID).Update("audit_status", audit.Status).Error; err != nil {
+		batchUpdates := map[string]any{
+			"audit_status": audit.Status,
+		}
+		if audit.Status == model.AuditStatusRejected {
+			batchUpdates["rectification_status"] = model.RectificationStatusPendingSubmission
+		}
+		if err := tx.Model(&model.TeaBatch{}).Where("id = ?", batchID).Updates(batchUpdates).Error; err != nil {
+			return err
+		}
+
+		if audit.Status == model.AuditStatusRejected {
+			if err := s.createOrOverwriteRectificationTaskTx(tx, batchID, stage, &audit); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 
 	return &audit, nil
+}
+
+func (s *TraceService) ListRectifications(filter RectificationListFilter) ([]model.RectificationTask, error) {
+	query := s.db.
+		Preload("Batch").
+		Preload("StageRecord").
+		Preload("SourceAudit").
+		Model(&model.RectificationTask{})
+	if status := strings.TrimSpace(filter.Status); status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if role := filter.Operator.PrimaryRole(); role == model.RoleFarmer || role == model.RoleEnterprise {
+		query = query.Where("responsible_role = ?", role)
+	}
+
+	var tasks []model.RectificationTask
+	if err := query.Order("updated_at DESC, id DESC").Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	if role := filter.Operator.PrimaryRole(); role == model.RoleFarmer || role == model.RoleEnterprise {
+		filtered := make([]model.RectificationTask, 0, len(tasks))
+		for _, task := range tasks {
+			if task.Batch != nil && s.CanAccessBatch(task.Batch, filter.Operator) {
+				filtered = append(filtered, task)
+			}
+		}
+		return filtered, nil
+	}
+
+	return tasks, nil
+}
+
+func (s *TraceService) SubmitRectification(id uint, input RectificationSubmitInput, operator OperatorContext) (*model.RectificationTask, error) {
+	task, err := s.getRectificationTask(id)
+	if err != nil {
+		return nil, err
+	}
+	if task.Batch == nil || !s.CanAccessBatch(task.Batch, operator) {
+		return nil, errors.New("当前账号无权提交该整改任务")
+	}
+	if operator.PrimaryRole() != task.ResponsibleRole {
+		return nil, errors.New("当前角色无权提交该整改任务")
+	}
+	if task.Status != model.RectificationStatusPendingSubmission {
+		return nil, errors.New("当前整改任务不处于待提交状态")
+	}
+
+	now := time.Now()
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		taskUpdates := map[string]any{
+			"status":           model.RectificationStatusSubmitted,
+			"response_comment": strings.TrimSpace(input.ResponseComment),
+			"submitted_by":     &operator.UserID,
+			"submitted_at":     &now,
+		}
+		if err := tx.Model(&model.RectificationTask{}).Where("id = ?", id).Updates(taskUpdates).Error; err != nil {
+			return err
+		}
+		return tx.Model(&model.TeaBatch{}).Where("id = ?", task.BatchID).Updates(map[string]any{
+			"rectification_status": model.RectificationStatusSubmitted,
+			"audit_status":         model.AuditStatusPending,
+		}).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.getRectificationTask(id)
+}
+
+func (s *TraceService) ReviewRectification(id uint, input RectificationReviewInput, operator OperatorContext) (*model.RectificationTask, error) {
+	if operator.PrimaryRole() != model.RoleRegulator {
+		return nil, errors.New("当前角色无权复审整改任务")
+	}
+
+	task, err := s.getRectificationTask(id)
+	if err != nil {
+		return nil, err
+	}
+	if task.Status != model.RectificationStatusSubmitted {
+		return nil, errors.New("当前整改任务不处于待复审状态")
+	}
+
+	status := defaultAuditStatus(input.Status)
+	if status != model.AuditStatusApproved && status != model.AuditStatusRejected {
+		return nil, errors.New("整改复审状态不合法")
+	}
+
+	now := time.Now()
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		taskUpdates := map[string]any{
+			"reviewer_comment": strings.TrimSpace(input.ReviewerComment),
+			"reviewed_by":      &operator.UserID,
+			"reviewed_at":      &now,
+		}
+		batchUpdates := map[string]any{}
+		if status == model.AuditStatusApproved {
+			taskUpdates["status"] = model.RectificationStatusCompleted
+			batchUpdates["rectification_status"] = model.RectificationStatusCompleted
+			batchUpdates["audit_status"] = model.AuditStatusApproved
+		} else {
+			taskUpdates["status"] = model.RectificationStatusPendingSubmission
+			batchUpdates["rectification_status"] = model.RectificationStatusPendingSubmission
+			batchUpdates["audit_status"] = model.AuditStatusRejected
+		}
+
+		if err := tx.Model(&model.RectificationTask{}).Where("id = ?", id).Updates(taskUpdates).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&model.TeaBatch{}).Where("id = ?", task.BatchID).Updates(batchUpdates).Error; err != nil {
+			return err
+		}
+
+		audit := model.AuditRecord{
+			BatchID:       task.BatchID,
+			StageRecordID: task.StageRecordID,
+			ReviewerID:    operator.UserID,
+			ReviewerName:  operator.Name(),
+			Action:        "rectification_review",
+			Status:        status,
+			Comment:       strings.TrimSpace(input.ReviewerComment),
+			ReviewedAt:    now,
+		}
+		return tx.Create(&audit).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.getRectificationTask(id)
 }
 
 func (s *TraceService) GetPublicTrace(code string) (*PublicTraceView, error) {
@@ -390,20 +626,21 @@ func (s *TraceService) GetPublicTrace(code string) (*PublicTraceView, error) {
 
 	view := &PublicTraceView{
 		Batch: PublicBatchSummary{
-			ID:             batch.ID,
-			BatchCode:      batch.BatchCode,
-			TraceCode:      batch.TraceCode,
-			ProductCode:    batch.ProductCode,
-			TeaName:        batch.TeaName,
-			TeaType:        batch.TeaType,
-			Origin:         batch.Origin,
-			FarmName:       batch.FarmName,
-			EnterpriseName: batch.EnterpriseName,
-			QuantityKg:     batch.QuantityKg,
-			HarvestDate:    batch.HarvestDate,
-			PackagingDate:  batch.PackagingDate,
-			AuditStatus:    batch.AuditStatus,
-			LatestGrade:    batch.LatestGrade,
+			ID:                  batch.ID,
+			BatchCode:           batch.BatchCode,
+			TraceCode:           batch.TraceCode,
+			ProductCode:         batch.ProductCode,
+			TeaName:             batch.TeaName,
+			TeaType:             batch.TeaType,
+			Origin:              batch.Origin,
+			FarmName:            batch.FarmName,
+			EnterpriseName:      batch.EnterpriseName,
+			QuantityKg:          batch.QuantityKg,
+			HarvestDate:         batch.HarvestDate,
+			PackagingDate:       batch.PackagingDate,
+			AuditStatus:         batch.AuditStatus,
+			RectificationStatus: batch.RectificationStatus,
+			LatestGrade:         batch.LatestGrade,
 		},
 		TracePath: batch.StageRecords,
 	}
@@ -418,8 +655,97 @@ func (s *TraceService) GetPublicTrace(code string) (*PublicTraceView, error) {
 	return view, nil
 }
 
+func (s *TraceService) getRectificationTask(id uint) (*model.RectificationTask, error) {
+	var task model.RectificationTask
+	if err := s.db.
+		Preload("Batch").
+		Preload("StageRecord").
+		Preload("SourceAudit").
+		First(&task, id).Error; err != nil {
+		return nil, err
+	}
+	return &task, nil
+}
+
+func (s *TraceService) createOrOverwriteRectificationTaskTx(tx *gorm.DB, batchID uint, stage *model.TraceStageRecord, audit *model.AuditRecord) error {
+	responsibleRole := model.RoleEnterprise
+	if stage != nil && (stage.Stage == model.StagePlanting || stage.Stage == model.StagePicking) {
+		responsibleRole = model.RoleFarmer
+	}
+
+	issueSummary := strings.TrimSpace(audit.Comment)
+	if issueSummary == "" {
+		issueSummary = "监管审核未通过，需要补充整改说明。"
+	}
+	requiredAction := buildRequiredAction(stage, responsibleRole)
+
+	var existing model.RectificationTask
+	err := tx.Where("batch_id = ? AND status <> ?", batchID, model.RectificationStatusCompleted).
+		Order("updated_at DESC, id DESC").
+		First(&existing).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	if existing.ID != 0 {
+		updates := map[string]any{
+			"stage_record_id":  stageRecordID(stage),
+			"source_audit_id":  audit.ID,
+			"responsible_role": responsibleRole,
+			"status":           model.RectificationStatusPendingSubmission,
+			"issue_summary":    issueSummary,
+			"required_action":  requiredAction,
+			"response_comment": "",
+			"reviewer_comment": strings.TrimSpace(audit.Comment),
+			"submitted_by":     nil,
+			"submitted_at":     nil,
+			"reviewed_by":      nil,
+			"reviewed_at":      nil,
+		}
+		return tx.Model(&model.RectificationTask{}).Where("id = ?", existing.ID).Updates(updates).Error
+	}
+
+	task := model.RectificationTask{
+		BatchID:         batchID,
+		StageRecordID:   stageRecordID(stage),
+		SourceAuditID:   audit.ID,
+		ResponsibleRole: responsibleRole,
+		Status:          model.RectificationStatusPendingSubmission,
+		IssueSummary:    issueSummary,
+		RequiredAction:  requiredAction,
+		ReviewerComment: strings.TrimSpace(audit.Comment),
+	}
+	return tx.Create(&task).Error
+}
+
 func normalizeStage(stage string) string {
 	return stageAliases[strings.ToLower(strings.TrimSpace(stage))]
+}
+
+func canManageStage(roleCode, stage string) bool {
+	allowedStages, ok := stageRolePermissions[strings.TrimSpace(roleCode)]
+	if !ok {
+		return false
+	}
+	_, allowed := allowedStages[strings.TrimSpace(stage)]
+	return allowed
+}
+
+func stageRecordID(stage *model.TraceStageRecord) *uint {
+	if stage == nil {
+		return nil
+	}
+	return &stage.ID
+}
+
+func buildRequiredAction(stage *model.TraceStageRecord, responsibleRole string) string {
+	if stage != nil {
+		return fmt.Sprintf("请围绕阶段“%s”补充整改说明，并重新提交复审。", stage.Title)
+	}
+	if responsibleRole == model.RoleFarmer {
+		return "请补充种植或采摘环节的整改说明，并重新提交复审。"
+	}
+	return "请补充批次主信息或加工流通环节的整改说明，并重新提交复审。"
 }
 
 func buildTraceCode(batchCode string) string {
@@ -439,6 +765,13 @@ func defaultTeaType(teaType string) string {
 		return "绿茶"
 	}
 	return strings.TrimSpace(teaType)
+}
+
+func defaultOrganization(inputValue, fallback string) string {
+	if strings.TrimSpace(inputValue) != "" {
+		return strings.TrimSpace(inputValue)
+	}
+	return strings.TrimSpace(fallback)
 }
 
 func defaultBatchStatus(status string) string {

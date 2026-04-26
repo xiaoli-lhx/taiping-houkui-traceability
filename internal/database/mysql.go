@@ -48,6 +48,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.QualityEvaluation{},
 		&model.QualityMetricDetail{},
 		&model.AuditRecord{},
+		&model.RectificationTask{},
 		&model.ConsumerFavorite{},
 		&model.UserFeedback{},
 		&model.ConsumerQueryHistory{},

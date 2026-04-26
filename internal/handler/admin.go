@@ -19,6 +19,11 @@ type rejectRequest struct {
 	Reason string `json:"reason"`
 }
 
+type processFeedbackRequest struct {
+	Status      string `json:"status"`
+	ProcessNote string `json:"process_note"`
+}
+
 func NewAdminHandler(adminService *service.AdminService) *AdminHandler {
 	return &AdminHandler{adminService: adminService}
 }
@@ -124,4 +129,113 @@ func (h *AdminHandler) RejectRegistration(c *gin.Context) {
 	}
 
 	responsex.Success(c, service.BuildUserProfile(user))
+}
+
+func (h *AdminHandler) EnableUser(c *gin.Context) {
+	userID, err := parseUintParam(c, "id")
+	if err != nil {
+		responsex.Fail(c, http.StatusBadRequest, "用户 ID 格式错误")
+		return
+	}
+
+	user, err := h.adminService.EnableUser(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			responsex.Fail(c, http.StatusNotFound, "用户不存在")
+			return
+		}
+		responsex.Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	responsex.Success(c, gin.H{
+		"user": service.BuildUserProfile(user),
+	})
+}
+
+func (h *AdminHandler) DisableUser(c *gin.Context) {
+	userID, err := parseUintParam(c, "id")
+	if err != nil {
+		responsex.Fail(c, http.StatusBadRequest, "用户 ID 格式错误")
+		return
+	}
+
+	user, err := h.adminService.DisableUser(userID, currentOperator(c).UserID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			responsex.Fail(c, http.StatusNotFound, "用户不存在")
+			return
+		}
+		responsex.Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	responsex.Success(c, gin.H{
+		"user": service.BuildUserProfile(user),
+	})
+}
+
+func (h *AdminHandler) ResetPassword(c *gin.Context) {
+	userID, err := parseUintParam(c, "id")
+	if err != nil {
+		responsex.Fail(c, http.StatusBadRequest, "用户 ID 格式错误")
+		return
+	}
+
+	user, err := h.adminService.ResetPassword(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			responsex.Fail(c, http.StatusNotFound, "用户不存在")
+			return
+		}
+		responsex.Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	responsex.Success(c, gin.H{
+		"user":               service.BuildUserProfile(user),
+		"temporary_password": service.AdminResetPasswordValue,
+	})
+}
+
+func (h *AdminHandler) ListFeedback(c *gin.Context) {
+	items, err := h.adminService.ListFeedback(service.FeedbackListFilter{
+		Status: c.Query("status"),
+	})
+	if err != nil {
+		responsex.Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	responsex.Success(c, items)
+}
+
+func (h *AdminHandler) ProcessFeedback(c *gin.Context) {
+	feedbackID, err := parseUintParam(c, "id")
+	if err != nil {
+		responsex.Fail(c, http.StatusBadRequest, "反馈 ID 格式错误")
+		return
+	}
+
+	var request processFeedbackRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		responsex.Fail(c, http.StatusBadRequest, "反馈处理参数格式错误")
+		return
+	}
+
+	item, err := h.adminService.ProcessFeedback(feedbackID, service.FeedbackProcessInput{
+		Status:      request.Status,
+		ProcessNote: request.ProcessNote,
+		OperatorID:  currentOperator(c).UserID,
+	})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			responsex.Fail(c, http.StatusNotFound, "反馈不存在")
+			return
+		}
+		responsex.Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	responsex.Success(c, item)
 }

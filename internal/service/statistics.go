@@ -1,9 +1,12 @@
 package service
 
 import (
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
+
+	"tea-traceability-system/internal/model"
 )
 
 type StatisticsService struct {
@@ -33,6 +36,16 @@ type MetricTrendItem struct {
 	MetricName   string  `json:"metric_name"`
 	MetricLabel  string  `json:"metric_label"`
 	AverageScore float64 `json:"average_score"`
+}
+
+type RiskAlertItem struct {
+	Type        string  `json:"type"`
+	Severity    string  `json:"severity"`
+	BatchID     uint    `json:"batch_id"`
+	BatchCode   string  `json:"batch_code"`
+	TraceCode   string  `json:"trace_code"`
+	Message     string  `json:"message"`
+	MetricValue float64 `json:"metric_value"`
 }
 
 func NewStatisticsService(db *gorm.DB) *StatisticsService {
@@ -119,4 +132,78 @@ func (s *StatisticsService) GetMetricTrends(days int, metricName string) ([]Metr
 	}
 
 	return items, nil
+}
+
+func (s *StatisticsService) GetRiskAlerts() ([]RiskAlertItem, error) {
+	var batches []model.TeaBatch
+	if err := s.db.Find(&batches).Error; err != nil {
+		return nil, err
+	}
+
+	alerts := make([]RiskAlertItem, 0)
+	for _, batch := range batches {
+		var latestEvaluation model.QualityEvaluation
+		evaluationErr := s.db.Where("batch_id = ?", batch.ID).Order("evaluated_at DESC, id DESC").First(&latestEvaluation).Error
+		if evaluationErr == nil && latestEvaluation.TotalScore < 75 {
+			alerts = append(alerts, RiskAlertItem{
+				Type:        "low_score",
+				Severity:    "high",
+				BatchID:     batch.ID,
+				BatchCode:   batch.BatchCode,
+				TraceCode:   batch.TraceCode,
+				Message:     fmt.Sprintf("批次最新品质得分 %.2f，低于风险阈值 75 分。", round2(latestEvaluation.TotalScore)),
+				MetricValue: round2(latestEvaluation.TotalScore),
+			})
+		}
+
+		if batch.PublicVisible && batch.AuditStatus != model.AuditStatusApproved {
+			alerts = append(alerts, RiskAlertItem{
+				Type:        "public_unapproved",
+				Severity:    "high",
+				BatchID:     batch.ID,
+				BatchCode:   batch.BatchCode,
+				TraceCode:   batch.TraceCode,
+				Message:     "批次已开放公开查询，但当前审核状态未通过。",
+				MetricValue: 1,
+			})
+		}
+
+		var stageCount int64
+		if err := s.db.Model(&model.TraceStageRecord{}).
+			Where("batch_id = ? AND updated_at >= ?", batch.ID, time.Now().AddDate(0, 0, -7)).
+			Count(&stageCount).Error; err != nil {
+			return nil, err
+		}
+		if stageCount >= 3 {
+			alerts = append(alerts, RiskAlertItem{
+				Type:        "frequent_stage_updates",
+				Severity:    "medium",
+				BatchID:     batch.ID,
+				BatchCode:   batch.BatchCode,
+				TraceCode:   batch.TraceCode,
+				Message:     "近 7 天内阶段记录新增或更新次数较多，建议监管复核。",
+				MetricValue: float64(stageCount),
+			})
+		}
+
+		var feedbackCount int64
+		if err := s.db.Model(&model.UserFeedback{}).
+			Where("batch_id = ? AND status <> ? AND created_at >= ?", batch.ID, model.FeedbackStatusResolved, time.Now().AddDate(0, 0, -30)).
+			Count(&feedbackCount).Error; err != nil {
+			return nil, err
+		}
+		if feedbackCount >= 3 {
+			alerts = append(alerts, RiskAlertItem{
+				Type:        "feedback_spike",
+				Severity:    "medium",
+				BatchID:     batch.ID,
+				BatchCode:   batch.BatchCode,
+				TraceCode:   batch.TraceCode,
+				Message:     "近 30 天内未关闭消费者反馈数量较多，建议尽快处理。",
+				MetricValue: float64(feedbackCount),
+			})
+		}
+	}
+
+	return alerts, nil
 }

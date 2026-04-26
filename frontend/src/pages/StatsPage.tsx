@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Alert, Card, Col, Row, Space, Statistic, Table, Typography } from 'antd'
+import { Alert, Card, Col, Row, Space, Statistic, Table, Tag, Typography } from 'antd'
+import { Link } from 'react-router-dom'
 
+import { hasAnyRole, withPortalPrefix } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
 import { EmptyState } from '../components/EmptyState'
 import {
@@ -9,42 +11,51 @@ import {
   ProductionDistributionCard,
 } from '../components/charts'
 import { api } from '../lib/api'
+import { getRiskSeverityMeta } from '../lib/display'
 import type {
   GradeDistributionItem,
   MetricTrendItem,
   OverviewStats,
   ProductionDistributionItem,
+  RiskAlertItem,
 } from '../types'
 
 export function StatsPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const [overview, setOverview] = useState<OverviewStats | null>(null)
   const [production, setProduction] = useState<ProductionDistributionItem[]>([])
   const [grades, setGrades] = useState<GradeDistributionItem[]>([])
   const [trends, setTrends] = useState<MetricTrendItem[]>([])
+  const [riskAlerts, setRiskAlerts] = useState<RiskAlertItem[]>([])
   const [error, setError] = useState('')
+  const canViewRiskAlerts = hasAnyRole(user, ['admin', 'regulator'])
 
   useEffect(() => {
     async function loadStats() {
       setError('')
       try {
-        const [overviewResult, productionResult, gradeResult, trendResult] = await Promise.all([
+        const requests: Array<Promise<unknown>> = [
           api.getOverview(token),
           api.getProductionDistribution(token),
           api.getGradeDistribution(token),
           api.getMetricTrends(token),
-        ])
-        setOverview(overviewResult)
-        setProduction(productionResult)
-        setGrades(gradeResult)
-        setTrends(trendResult)
+        ]
+        if (canViewRiskAlerts) {
+          requests.push(api.getRiskAlerts(token))
+        }
+        const [overviewResult, productionResult, gradeResult, trendResult, riskResult] = await Promise.all(requests)
+        setOverview(overviewResult as OverviewStats)
+        setProduction(productionResult as ProductionDistributionItem[])
+        setGrades(gradeResult as GradeDistributionItem[])
+        setTrends(trendResult as MetricTrendItem[])
+        setRiskAlerts((riskResult as RiskAlertItem[] | undefined) ?? [])
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : '加载统计数据失败')
       }
     }
 
     void loadStats()
-  }, [token])
+  }, [canViewRiskAlerts, token])
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -106,6 +117,40 @@ export function StatsPage() {
       <Card>
         {trends.length ? <MetricTrendCard items={trends} /> : <EmptyState description="暂无品质趋势数据" />}
       </Card>
+
+      {canViewRiskAlerts ? (
+        <Card title="风险预警列表">
+          <Table<RiskAlertItem>
+            rowKey={(record) => `${record.type}-${record.batch_id}-${record.metric_value}`}
+            pagination={{ pageSize: 6 }}
+            dataSource={riskAlerts}
+            locale={{ emptyText: <EmptyState description="当前没有命中的风险预警" /> }}
+            columns={[
+              {
+                title: '风险级别',
+                dataIndex: 'severity',
+                key: 'severity',
+                render: (value: string) => {
+                  const meta = getRiskSeverityMeta(value)
+                  return <Tag color={meta.color}>{meta.text}</Tag>
+                },
+              },
+              { title: '风险类型', dataIndex: 'type', key: 'type' },
+              { title: '批次码', dataIndex: 'batch_code', key: 'batch_code' },
+              { title: '溯源码', dataIndex: 'trace_code', key: 'trace_code' },
+              { title: '指标值', dataIndex: 'metric_value', key: 'metric_value' },
+              { title: '提示信息', dataIndex: 'message', key: 'message' },
+              {
+                title: '操作',
+                key: 'action',
+                render: (_: unknown, record: RiskAlertItem) => (
+                  <Link to={withPortalPrefix(user, `/batches/${record.batch_id}`)}>查看批次</Link>
+                ),
+              },
+            ]}
+          />
+        </Card>
+      ) : null}
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={12}>

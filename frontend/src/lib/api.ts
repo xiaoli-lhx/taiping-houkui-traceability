@@ -1,11 +1,12 @@
 import type {
+  AdminUserActionResult,
   ApiEnvelope,
   AppRole,
   AuditCreateRequest,
   AuditRecord,
   ConsumerFavorite,
-  ConsumerFeedback,
   ConsumerQueryHistory,
+  FeedbackTicket,
   GradeDistributionItem,
   LoginResponse,
   MetricTrendItem,
@@ -14,8 +15,10 @@ import type {
   ProductionDistributionItem,
   PublicTraceView,
   QualityEvaluationView,
+  RectificationTask,
   RegisterRequest,
   RegistrationStatusResponse,
+  RiskAlertItem,
   TeaBatch,
   TraceStageRecord,
   UserProfile,
@@ -90,6 +93,26 @@ export const api = {
       token,
     )
   },
+  enableUser(token: string, id: number) {
+    return request<AdminUserActionResult>(`/admin/users/${id}/enable`, { method: 'POST', body: JSON.stringify({}) }, token)
+  },
+  disableUser(token: string, id: number) {
+    return request<AdminUserActionResult>(`/admin/users/${id}/disable`, { method: 'POST', body: JSON.stringify({}) }, token)
+  },
+  resetUserPassword(token: string, id: number) {
+    return request<AdminUserActionResult>(`/admin/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify({}) }, token)
+  },
+  getAdminFeedback(token: string, options: { status?: string } = {}) {
+    const search = new URLSearchParams()
+    if (options.status?.trim()) {
+      search.set('status', options.status.trim())
+    }
+    const query = search.toString()
+    return request<FeedbackTicket[]>(`/admin/feedback${query ? `?${query}` : ''}`, { method: 'GET' }, token)
+  },
+  processFeedback(token: string, id: number, body: { status: string; process_note: string }) {
+    return request<FeedbackTicket>(`/admin/feedback/${id}/process`, { method: 'POST', body: JSON.stringify(body) }, token)
+  },
   getBatches(
     token: string,
     options: {
@@ -159,6 +182,20 @@ export const api = {
   createAudit(token: string, batchId: string, body: AuditCreateRequest) {
     return request<AuditRecord>(`/trace/batches/${batchId}/audits`, { method: 'POST', body: JSON.stringify(body) }, token)
   },
+  getRectifications(token: string, options: { status?: string } = {}) {
+    const search = new URLSearchParams()
+    if (options.status?.trim()) {
+      search.set('status', options.status.trim())
+    }
+    const query = search.toString()
+    return request<RectificationTask[]>(`/trace/rectifications${query ? `?${query}` : ''}`, { method: 'GET' }, token)
+  },
+  submitRectification(token: string, id: number, body: { response_comment: string }) {
+    return request<RectificationTask>(`/trace/rectifications/${id}/submit`, { method: 'POST', body: JSON.stringify(body) }, token)
+  },
+  reviewRectification(token: string, id: number, body: { status: string; reviewer_comment: string }) {
+    return request<RectificationTask>(`/trace/rectifications/${id}/review`, { method: 'POST', body: JSON.stringify(body) }, token)
+  },
   createFavorite(token: string, batchId: number) {
     return request<ConsumerFavorite>('/consumer/favorites', { method: 'POST', body: JSON.stringify({ batch_id: batchId }) }, token)
   },
@@ -166,12 +203,18 @@ export const api = {
     return request<ConsumerFavorite[]>('/consumer/favorites', { method: 'GET' }, token)
   },
   createFeedback(token: string, body: { batch_id?: number; trace_code?: string; content: string; contact_info: string }) {
-    return request<ConsumerFeedback>('/consumer/feedback', { method: 'POST', body: JSON.stringify(body) }, token)
+    return request<FeedbackTicket>('/consumer/feedback', { method: 'POST', body: JSON.stringify(body) }, token)
+  },
+  getConsumerFeedback(token: string) {
+    return request<FeedbackTicket[]>('/consumer/feedback', { method: 'GET' }, token)
   },
   getHistory(token: string) {
     return request<ConsumerQueryHistory[]>('/consumer/history', { method: 'GET' }, token)
   },
   createHistory(token: string, code: string) {
     return request<ConsumerQueryHistory>('/consumer/history', { method: 'POST', body: JSON.stringify({ code }) }, token)
+  },
+  getRiskAlerts(token: string) {
+    return request<RiskAlertItem[]>('/stats/risk-alerts', { method: 'GET' }, token)
   },
 }

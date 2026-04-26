@@ -25,6 +25,15 @@ const (
 	AuditStatusApproved = "approved"
 	AuditStatusRejected = "rejected"
 
+	RectificationStatusNone              = "none"
+	RectificationStatusPendingSubmission = "pending_submission"
+	RectificationStatusSubmitted         = "submitted"
+	RectificationStatusCompleted         = "completed"
+
+	FeedbackStatusPending    = "pending"
+	FeedbackStatusProcessing = "processing"
+	FeedbackStatusResolved   = "resolved"
+
 	StagePlanting     = "planting"
 	StagePicking      = "picking"
 	StageProcessing   = "processing"
@@ -67,29 +76,31 @@ type UserRole struct {
 }
 
 type TeaBatch struct {
-	ID                 uint                `gorm:"primaryKey" json:"id"`
-	BatchCode          string              `gorm:"size:64;uniqueIndex;not null" json:"batch_code"`
-	TraceCode          string              `gorm:"size:64;uniqueIndex;not null" json:"trace_code"`
-	ProductCode        string              `gorm:"size:64;index" json:"product_code"`
-	TeaName            string              `gorm:"size:128;not null" json:"tea_name"`
-	TeaType            string              `gorm:"size:64;not null" json:"tea_type"`
-	Origin             string              `gorm:"size:128;not null" json:"origin"`
-	FarmName           string              `gorm:"size:128" json:"farm_name"`
-	EnterpriseName     string              `gorm:"size:128" json:"enterprise_name"`
-	QuantityKg         float64             `gorm:"type:decimal(10,2)" json:"quantity_kg"`
-	HarvestDate        *time.Time          `json:"harvest_date,omitempty"`
-	PackagingDate      *time.Time          `json:"packaging_date,omitempty"`
-	Status             string              `gorm:"size:32;default:draft" json:"status"`
-	AuditStatus        string              `gorm:"size:32;default:pending" json:"audit_status"`
-	LatestGrade        string              `gorm:"size:32" json:"latest_grade"`
-	PublicVisible      bool                `gorm:"default:true" json:"public_visible"`
-	Notes              string              `gorm:"type:text" json:"notes"`
-	CreatedBy          uint                `gorm:"index" json:"created_by"`
-	StageRecords       []TraceStageRecord  `gorm:"foreignKey:BatchID" json:"stage_records,omitempty"`
-	QualityEvaluations []QualityEvaluation `gorm:"foreignKey:BatchID" json:"quality_evaluations,omitempty"`
-	AuditRecords       []AuditRecord       `gorm:"foreignKey:BatchID" json:"audit_records,omitempty"`
-	CreatedAt          time.Time           `json:"created_at"`
-	UpdatedAt          time.Time           `json:"updated_at"`
+	ID                  uint                `gorm:"primaryKey" json:"id"`
+	BatchCode           string              `gorm:"size:64;uniqueIndex;not null" json:"batch_code"`
+	TraceCode           string              `gorm:"size:64;uniqueIndex;not null" json:"trace_code"`
+	ProductCode         string              `gorm:"size:64;index" json:"product_code"`
+	TeaName             string              `gorm:"size:128;not null" json:"tea_name"`
+	TeaType             string              `gorm:"size:64;not null" json:"tea_type"`
+	Origin              string              `gorm:"size:128;not null" json:"origin"`
+	FarmName            string              `gorm:"size:128" json:"farm_name"`
+	EnterpriseName      string              `gorm:"size:128" json:"enterprise_name"`
+	QuantityKg          float64             `gorm:"type:decimal(10,2)" json:"quantity_kg"`
+	HarvestDate         *time.Time          `json:"harvest_date,omitempty"`
+	PackagingDate       *time.Time          `json:"packaging_date,omitempty"`
+	Status              string              `gorm:"size:32;default:draft" json:"status"`
+	AuditStatus         string              `gorm:"size:32;default:pending" json:"audit_status"`
+	RectificationStatus string              `gorm:"size:32;default:none" json:"rectification_status"`
+	LatestGrade         string              `gorm:"size:32" json:"latest_grade"`
+	PublicVisible       bool                `gorm:"default:true" json:"public_visible"`
+	Notes               string              `gorm:"type:text" json:"notes"`
+	CreatedBy           uint                `gorm:"index" json:"created_by"`
+	StageRecords        []TraceStageRecord  `gorm:"foreignKey:BatchID" json:"stage_records,omitempty"`
+	QualityEvaluations  []QualityEvaluation `gorm:"foreignKey:BatchID" json:"quality_evaluations,omitempty"`
+	AuditRecords        []AuditRecord       `gorm:"foreignKey:BatchID" json:"audit_records,omitempty"`
+	RectificationTasks  []RectificationTask `gorm:"foreignKey:BatchID" json:"rectification_tasks,omitempty"`
+	CreatedAt           time.Time           `json:"created_at"`
+	UpdatedAt           time.Time           `json:"updated_at"`
 }
 
 type TraceStageRecord struct {
@@ -148,6 +159,28 @@ type AuditRecord struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
+type RectificationTask struct {
+	ID              uint              `gorm:"primaryKey" json:"id"`
+	BatchID         uint              `gorm:"index;not null" json:"batch_id"`
+	StageRecordID   *uint             `gorm:"index" json:"stage_record_id,omitempty"`
+	SourceAuditID   uint              `gorm:"index;not null" json:"source_audit_id"`
+	ResponsibleRole string            `gorm:"size:32;index;not null" json:"responsible_role"`
+	Status          string            `gorm:"size:32;index;default:pending_submission" json:"status"`
+	IssueSummary    string            `gorm:"type:text" json:"issue_summary"`
+	RequiredAction  string            `gorm:"type:text" json:"required_action"`
+	ResponseComment string            `gorm:"type:text" json:"response_comment"`
+	ReviewerComment string            `gorm:"type:text" json:"reviewer_comment"`
+	SubmittedBy     *uint             `gorm:"index" json:"submitted_by,omitempty"`
+	SubmittedAt     *time.Time        `json:"submitted_at,omitempty"`
+	ReviewedBy      *uint             `gorm:"index" json:"reviewed_by,omitempty"`
+	ReviewedAt      *time.Time        `json:"reviewed_at,omitempty"`
+	Batch           *TeaBatch         `gorm:"foreignKey:BatchID" json:"batch,omitempty"`
+	StageRecord     *TraceStageRecord `gorm:"foreignKey:StageRecordID" json:"stage_record,omitempty"`
+	SourceAudit     *AuditRecord      `gorm:"foreignKey:SourceAuditID" json:"source_audit,omitempty"`
+	CreatedAt       time.Time         `json:"created_at"`
+	UpdatedAt       time.Time         `json:"updated_at"`
+}
+
 type ConsumerFavorite struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	UserID    uint      `gorm:"index;not null" json:"user_id"`
@@ -157,14 +190,18 @@ type ConsumerFavorite struct {
 }
 
 type UserFeedback struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	UserID      uint      `gorm:"index;not null" json:"user_id"`
-	BatchID     *uint     `gorm:"index" json:"batch_id,omitempty"`
-	TraceCode   string    `gorm:"size:64;index" json:"trace_code"`
-	Content     string    `gorm:"type:text;not null" json:"content"`
-	ContactInfo string    `gorm:"size:255" json:"contact_info"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          uint       `gorm:"primaryKey" json:"id"`
+	UserID      uint       `gorm:"index;not null" json:"user_id"`
+	BatchID     *uint      `gorm:"index" json:"batch_id,omitempty"`
+	TraceCode   string     `gorm:"size:64;index" json:"trace_code"`
+	Content     string     `gorm:"type:text;not null" json:"content"`
+	ContactInfo string     `gorm:"size:255" json:"contact_info"`
+	Status      string     `gorm:"size:32;index;default:pending" json:"status"`
+	ProcessNote string     `gorm:"type:text" json:"process_note"`
+	ProcessedBy *uint      `gorm:"index" json:"processed_by,omitempty"`
+	ProcessedAt *time.Time `json:"processed_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 type ConsumerQueryHistory struct {

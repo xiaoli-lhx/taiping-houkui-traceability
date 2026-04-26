@@ -22,6 +22,11 @@ export interface UserProfile {
   roles: string[]
 }
 
+export interface AdminUserActionResult {
+  user: UserProfile
+  temporary_password?: string
+}
+
 export interface LoginResponse {
   access_token: string
   expires_at: string
@@ -61,6 +66,7 @@ export interface TeaBatch {
   packaging_date?: string
   status: string
   audit_status: string
+  rectification_status: string
   latest_grade: string
   public_visible: boolean
   notes: string
@@ -70,6 +76,7 @@ export interface TeaBatch {
   stage_records?: TraceStageRecord[]
   quality_evaluations?: QualityEvaluation[]
   audit_records?: AuditRecord[]
+  rectification_tasks?: RectificationTask[]
 }
 
 export interface TraceStageRecord {
@@ -142,6 +149,28 @@ export interface AuditCreateRequest {
   comment: string
 }
 
+export interface RectificationTask {
+  id: number
+  batch_id: number
+  stage_record_id?: number
+  source_audit_id: number
+  responsible_role: string
+  status: string
+  issue_summary: string
+  required_action: string
+  response_comment: string
+  reviewer_comment: string
+  submitted_by?: number
+  submitted_at?: string
+  reviewed_by?: number
+  reviewed_at?: string
+  created_at: string
+  updated_at: string
+  batch?: TeaBatch
+  stage_record?: TraceStageRecord
+  source_audit?: AuditRecord
+}
+
 export interface PaginationResult<T> {
   items: T[]
   pagination: {
@@ -191,6 +220,7 @@ export interface PublicTraceView {
     harvest_date?: string
     packaging_date?: string
     audit_status: string
+    rectification_status: string
     latest_grade: string
   }
   trace_path: TraceStageRecord[]
@@ -205,14 +235,22 @@ export interface ConsumerFavorite {
   batch: TeaBatch
 }
 
-export interface ConsumerFeedback {
+export interface FeedbackTicket {
   id: number
   user_id: number
+  username?: string
+  display_name?: string
   batch_id?: number
+  batch_code?: string
   trace_code?: string
   content: string
   contact_info: string
+  status: string
+  process_note: string
+  processed_by?: number
+  processed_at?: string
   created_at: string
+  updated_at: string
 }
 
 export interface ConsumerQueryHistory {
@@ -224,4 +262,14 @@ export interface ConsumerQueryHistory {
   trace_code: string
   queried_at: string
   created_at: string
+}
+
+export interface RiskAlertItem {
+  type: string
+  severity: 'high' | 'medium' | 'low'
+  batch_id: number
+  batch_code: string
+  trace_code: string
+  message: string
+  metric_value: number
 }

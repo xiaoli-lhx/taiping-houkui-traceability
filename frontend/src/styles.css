@@ -33,13 +33,43 @@ a {
   flex-direction: column;
 }
 
+.app-layout--admin {
+  background:
+    radial-gradient(circle at top left, rgba(220, 191, 115, 0.08), transparent 22%),
+    linear-gradient(180deg, #f6f3ec 0%, #f3efe6 100%);
+}
+
+.app-sider--admin {
+  background: linear-gradient(180deg, rgba(252, 250, 245, 0.98) 0%, rgba(247, 243, 235, 0.94) 100%) !important;
+  border-right: 1px solid rgba(94, 113, 73, 0.12);
+  box-shadow: 8px 0 28px rgba(30, 56, 24, 0.06);
+}
+
 .sider-brand {
   padding: 24px 20px 20px;
+}
+
+.app-sider--admin .sider-brand {
+  margin: 14px 14px 10px;
+  padding: 20px 18px 18px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(220, 191, 115, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(251, 248, 241, 0.92) 0%, rgba(246, 240, 228, 0.88) 100%);
+  border: 1px solid rgba(94, 113, 73, 0.12);
 }
 
 .sider-footer {
   margin-top: auto;
   padding: 20px;
+}
+
+.app-sider--admin .sider-footer {
+  margin: 0 14px 16px;
+  padding: 18px 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(94, 113, 73, 0.1);
 }
 
 .role-tag-wrap {
@@ -58,8 +88,39 @@ a {
   padding: 0 24px;
 }
 
+.app-header--admin {
+  background: rgba(249, 246, 239, 0.82);
+  border-bottom: 1px solid rgba(94, 113, 73, 0.12);
+  box-shadow: 0 4px 20px rgba(30, 56, 24, 0.04);
+}
+
+.app-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.app-header-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-header-link {
+  color: #2f6f1e;
+  font-weight: 600;
+}
+
+.app-header-link:hover {
+  color: #1f5612;
+}
+
 .app-content {
   padding: 24px;
+}
+
+.app-layout--admin .app-content {
+  padding: 26px;
 }
 
 .login-page {
@@ -403,6 +464,250 @@ a {
   color: #4c8a32;
 }
 
+.admin-page-stack {
+  width: 100%;
+}
+
+.admin-hero-card,
+.admin-section-card {
+  border: 1px solid rgba(94, 113, 73, 0.12);
+  border-radius: 28px !important;
+  background: linear-gradient(180deg, rgba(251, 248, 241, 0.96) 0%, rgba(247, 242, 231, 0.92) 100%);
+  box-shadow: 0 18px 40px rgba(30, 56, 24, 0.08);
+}
+
+.admin-hero-card .ant-card-body,
+.admin-section-card .ant-card-body {
+  padding: 28px 30px;
+}
+
+.admin-hero-card--section {
+  background:
+    radial-gradient(circle at top right, rgba(220, 191, 115, 0.16), transparent 28%),
+    linear-gradient(180deg, rgba(251, 248, 241, 0.96) 0%, rgba(247, 242, 231, 0.92) 100%);
+}
+
+.admin-hero-badge {
+  align-self: flex-start;
+  margin-inline-end: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: #5c7f45;
+  background: rgba(92, 127, 69, 0.12);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.admin-hero-title {
+  margin: 0 !important;
+  color: #24381f !important;
+  font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
+  font-size: 36px !important;
+  line-height: 1.18 !important;
+}
+
+.admin-hero-description {
+  margin: 0 !important;
+  color: rgba(43, 52, 38, 0.74) !important;
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.admin-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-hero-actions .ant-btn {
+  min-width: 144px;
+  border-radius: 14px;
+}
+
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-stat-card {
+  border-radius: 24px !important;
+  overflow: hidden;
+}
+
+.admin-stat-card .ant-card-body {
+  padding: 22px 24px;
+}
+
+.admin-stat-card--warning {
+  background: linear-gradient(180deg, rgba(255, 248, 230, 0.96) 0%, rgba(255, 242, 208, 0.92) 100%);
+}
+
+.admin-stat-card--success {
+  background: linear-gradient(180deg, rgba(237, 250, 239, 0.96) 0%, rgba(226, 245, 230, 0.92) 100%);
+}
+
+.admin-stat-card--danger {
+  background: linear-gradient(180deg, rgba(255, 241, 240, 0.96) 0%, rgba(255, 232, 230, 0.92) 100%);
+}
+
+.admin-stat-card--primary {
+  background: linear-gradient(180deg, rgba(240, 247, 255, 0.96) 0%, rgba(229, 240, 255, 0.92) 100%);
+}
+
+.admin-stat-card--neutral {
+  background: linear-gradient(180deg, rgba(251, 249, 244, 0.96) 0%, rgba(245, 240, 230, 0.92) 100%);
+}
+
+.admin-stat-label {
+  color: rgba(60, 79, 48, 0.72);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.admin-stat-value {
+  margin: 10px 0 0 !important;
+  color: #24381f !important;
+}
+
+.admin-card-link {
+  color: #2f6f1e;
+  font-weight: 600;
+}
+
+.admin-card-link:hover {
+  color: #1f5612;
+}
+
+.admin-section-description {
+  margin-bottom: 12px !important;
+  color: rgba(43, 52, 38, 0.7) !important;
+}
+
+.admin-preview-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-preview-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(94, 113, 73, 0.1);
+}
+
+.admin-preview-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-status-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.admin-status-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.54);
+  border: 1px solid rgba(94, 113, 73, 0.1);
+  color: #38472d;
+}
+
+.admin-status-summary-item strong {
+  font-size: 18px;
+}
+
+.admin-inline-loading {
+  display: flex;
+  justify-content: center;
+  padding: 28px 0;
+}
+
+.admin-empty-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 4px;
+}
+
+.admin-empty-panel .ant-empty {
+  margin-block: 8px 0;
+}
+
+.admin-table-card .ant-card-body {
+  padding-top: 22px;
+}
+
+.admin-table-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-inline-tag {
+  margin-inline-end: 0;
+  border-radius: 999px;
+  padding-inline: 10px;
+  font-weight: 600;
+}
+
+.admin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.admin-toolbar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-filter-segmented {
+  border-radius: 14px;
+  padding: 4px;
+  background: rgba(92, 127, 69, 0.08);
+}
+
+.admin-filter-segmented .ant-segmented-item {
+  border-radius: 10px;
+}
+
+.admin-filter-segmented .ant-segmented-item-selected {
+  color: #234f18;
+}
+
+.admin-profile-descriptions .ant-descriptions-item-label {
+  width: 160px;
+  color: #52614a;
+  font-weight: 600;
+  background: rgba(246, 242, 232, 0.9) !important;
+}
+
+.admin-profile-descriptions .ant-descriptions-item-content {
+  background: rgba(255, 255, 255, 0.68) !important;
+}
+
 .trace-code-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;
@@ -427,6 +732,29 @@ a {
 
 .ant-card {
   border-radius: 18px;
+}
+
+.app-sider--admin .ant-menu {
+  margin: 0 10px;
+  background: transparent !important;
+}
+
+.app-sider--admin .ant-menu-item {
+  height: 46px;
+  margin-block: 6px;
+  border-radius: 14px;
+  color: #36452c;
+}
+
+.app-sider--admin .ant-menu-item-selected {
+  background: linear-gradient(90deg, rgba(226, 239, 219, 0.9) 0%, rgba(213, 233, 204, 0.92) 100%) !important;
+  color: #24461a !important;
+  font-weight: 600;
+}
+
+.app-sider--admin .ant-menu-item:hover {
+  background: rgba(226, 239, 219, 0.5) !important;
+  color: #24461a !important;
 }
 
 .ant-table-wrapper .ant-table {
@@ -494,6 +822,28 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .admin-overview-grid,
+  .admin-status-summary,
+  .register-hero-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-table-summary,
+  .admin-preview-item,
+  .admin-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-profile-descriptions .ant-descriptions-item-label {
+    width: auto;
+  }
+
+  .admin-hero-card .ant-card-body,
+  .admin-section-card .ant-card-body {
+    padding: 24px 22px;
+  }
+
   .login-card--glass .ant-card-body {
     padding: 32px 24px 24px;
   }
@@ -519,6 +869,14 @@ a {
   .app-header {
     padding-left: 16px;
     padding-right: 16px;
+  }
+
+  .app-header-main {
+    gap: 6px;
+  }
+
+  .app-layout--admin .app-content {
+    padding: 20px 16px;
   }
 }
 

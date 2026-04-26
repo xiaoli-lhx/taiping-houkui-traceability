@@ -49,6 +49,15 @@ type auditRequest struct {
 	Comment       string `json:"comment"`
 }
 
+type rectificationSubmitRequest struct {
+	ResponseComment string `json:"response_comment"`
+}
+
+type rectificationReviewRequest struct {
+	Status          string `json:"status"`
+	ReviewerComment string `json:"reviewer_comment"`
+}
+
 func NewTraceHandler(traceService *service.TraceService) *TraceHandler {
 	return &TraceHandler{traceService: traceService}
 }
@@ -179,20 +188,6 @@ func (h *TraceHandler) UpdateBatch(c *gin.Context) {
 		return
 	}
 
-	existingBatch, err := h.traceService.GetBatch(id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			responsex.Fail(c, http.StatusNotFound, "批次不存在")
-			return
-		}
-		responsex.Fail(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if !h.traceService.CanAccessBatch(existingBatch, currentOperator(c)) {
-		responsex.Fail(c, http.StatusForbidden, "当前账号无权修改该批次")
-		return
-	}
-
 	batch, err := h.traceService.UpdateBatch(id, service.BatchUpsertInput{
 		BatchCode:      request.BatchCode,
 		TraceCode:      request.TraceCode,
@@ -208,7 +203,7 @@ func (h *TraceHandler) UpdateBatch(c *gin.Context) {
 		Status:         request.Status,
 		PublicVisible:  request.PublicVisible,
 		Notes:          request.Notes,
-	})
+	}, currentOperator(c))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			responsex.Fail(c, http.StatusNotFound, "批次不存在")
@@ -255,23 +250,12 @@ func (h *TraceHandler) CreateStage(c *gin.Context) {
 		input.OccurredAt = *occurredAt
 	}
 
-	batch, err := h.traceService.GetBatch(batchID)
+	stage, err := h.traceService.CreateStage(batchID, input, currentOperator(c))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			responsex.Fail(c, http.StatusNotFound, "批次不存在")
 			return
 		}
-		responsex.Fail(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	operator := currentOperator(c)
-	if !h.traceService.CanAccessBatch(batch, operator) {
-		responsex.Fail(c, http.StatusForbidden, "当前账号无权为该批次新增阶段")
-		return
-	}
-
-	stage, err := h.traceService.CreateStage(batchID, input, operator)
-	if err != nil {
 		responsex.Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -333,12 +317,12 @@ func (h *TraceHandler) DeleteStage(c *gin.Context) {
 		return
 	}
 
-	if err := h.traceService.DeleteStage(stageID); err != nil {
+	if err := h.traceService.DeleteStage(stageID, currentOperator(c)); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			responsex.Fail(c, http.StatusNotFound, "阶段记录不存在")
 			return
 		}
-		responsex.Fail(c, http.StatusInternalServerError, err.Error())
+		responsex.Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -408,6 +392,80 @@ func (h *TraceHandler) CreateAudit(c *gin.Context) {
 	}
 
 	responsex.Created(c, record)
+}
+
+func (h *TraceHandler) ListRectifications(c *gin.Context) {
+	items, err := h.traceService.ListRectifications(service.RectificationListFilter{
+		Status:   c.Query("status"),
+		Operator: currentOperator(c),
+	})
+	if err != nil {
+		responsex.Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	responsex.Success(c, items)
+}
+
+func (h *TraceHandler) SubmitRectification(c *gin.Context) {
+	taskID, err := parseUintParam(c, "id")
+	if err != nil {
+		responsex.Fail(c, http.StatusBadRequest, "整改任务 ID 格式错误")
+		return
+	}
+
+	var request rectificationSubmitRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		responsex.Fail(c, http.StatusBadRequest, "整改提交参数格式错误")
+		return
+	}
+
+	item, err := h.traceService.SubmitRectification(taskID, service.RectificationSubmitInput{
+		ResponseComment: request.ResponseComment,
+	}, currentOperator(c))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			responsex.Fail(c, http.StatusNotFound, "整改任务不存在")
+			return
+		}
+		responsex.Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	responsex.Success(c, item)
+}
+
+func (h *TraceHandler) ReviewRectification(c *gin.Context) {
+	taskID, err := parseUintParam(c, "id")
+	if err != nil {
+		responsex.Fail(c, http.StatusBadRequest, "整改任务 ID 格式错误")
+		return
+	}
+
+	var request rectificationReviewRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		responsex.Fail(c, http.StatusBadRequest, "整改复审参数格式错误")
+		return
+	}
+	if strings.TrimSpace(request.Status) == "" {
+		responsex.Fail(c, http.StatusBadRequest, "整改复审状态不能为空")
+		return
+	}
+
+	item, err := h.traceService.ReviewRectification(taskID, service.RectificationReviewInput{
+		Status:          request.Status,
+		ReviewerComment: request.ReviewerComment,
+	}, currentOperator(c))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			responsex.Fail(c, http.StatusNotFound, "整改任务不存在")
+			return
+		}
+		responsex.Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	responsex.Success(c, item)
 }
 
 func validateBatchRequest(request batchRequest) bool {
