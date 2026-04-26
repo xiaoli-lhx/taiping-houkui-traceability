@@ -81,11 +81,12 @@ export function AppShell() {
       .find((item) => location.pathname.startsWith(item.key))?.key ?? location.pathname
 
   const approvalMeta = getAuditStatusMeta(user?.approval_status)
+  const isPortalShell = Boolean(getPortalPrefix(user))
   const isAdminShell = hasRole(user, 'admin')
 
   return (
-    <Layout className={`app-layout ${isAdminShell ? 'app-layout--admin' : ''}`}>
-      <Sider width={248} theme="light" className={`app-sider ${isAdminShell ? 'app-sider--admin' : ''}`}>
+    <Layout className={`app-layout ${isPortalShell ? 'app-layout--portal' : ''} ${isAdminShell ? 'app-layout--admin' : ''}`}>
+      <Sider width={248} theme="light" className={`app-sider ${isPortalShell ? 'app-sider--portal' : ''} ${isAdminShell ? 'app-sider--admin' : ''}`}>
         <div className="sider-brand">
           <Typography.Text type="secondary">Tea Traceability System</Typography.Text>
           <Typography.Title level={4} style={{ margin: '6px 0 0' }}>
@@ -127,7 +128,7 @@ export function AppShell() {
       </Sider>
 
       <Layout>
-        <Header className={`app-header ${isAdminShell ? 'app-header--admin' : ''}`}>
+        <Header className={`app-header ${isPortalShell ? 'app-header--portal' : ''} ${isAdminShell ? 'app-header--admin' : ''}`}>
           <div className="app-header-main">
             <Space direction="vertical" size={0}>
               <Typography.Title level={3} style={{ margin: 0 }}>

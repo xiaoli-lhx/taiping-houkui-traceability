@@ -39,6 +39,18 @@ a {
     linear-gradient(180deg, #f6f3ec 0%, #f3efe6 100%);
 }
 
+.app-layout--portal {
+  background:
+    radial-gradient(circle at top left, rgba(220, 191, 115, 0.06), transparent 24%),
+    linear-gradient(180deg, #f8f5ee 0%, #f3efe6 100%);
+}
+
+.app-sider--portal {
+  background: linear-gradient(180deg, rgba(252, 250, 245, 0.98) 0%, rgba(247, 243, 235, 0.94) 100%) !important;
+  border-right: 1px solid rgba(94, 113, 73, 0.12);
+  box-shadow: 8px 0 28px rgba(30, 56, 24, 0.06);
+}
+
 .app-sider--admin {
   background: linear-gradient(180deg, rgba(252, 250, 245, 0.98) 0%, rgba(247, 243, 235, 0.94) 100%) !important;
   border-right: 1px solid rgba(94, 113, 73, 0.12);
@@ -49,6 +61,7 @@ a {
   padding: 24px 20px 20px;
 }
 
+.app-sider--portal .sider-brand,
 .app-sider--admin .sider-brand {
   margin: 14px 14px 10px;
   padding: 20px 18px 18px;
@@ -64,6 +77,7 @@ a {
   padding: 20px;
 }
 
+.app-sider--portal .sider-footer,
 .app-sider--admin .sider-footer {
   margin: 0 14px 16px;
   padding: 18px 16px;
@@ -89,6 +103,12 @@ a {
 }
 
 .app-header--admin {
+  background: rgba(249, 246, 239, 0.82);
+  border-bottom: 1px solid rgba(94, 113, 73, 0.12);
+  box-shadow: 0 4px 20px rgba(30, 56, 24, 0.04);
+}
+
+.app-header--portal {
   background: rgba(249, 246, 239, 0.82);
   border-bottom: 1px solid rgba(94, 113, 73, 0.12);
   box-shadow: 0 4px 20px rgba(30, 56, 24, 0.04);
@@ -120,6 +140,10 @@ a {
 }
 
 .app-layout--admin .app-content {
+  padding: 26px;
+}
+
+.app-layout--portal .app-content {
   padding: 26px;
 }
 
@@ -708,6 +732,158 @@ a {
   background: rgba(255, 255, 255, 0.68) !important;
 }
 
+.portal-hero-card {
+  background:
+    radial-gradient(circle at top right, rgba(113, 159, 72, 0.14), transparent 26%),
+    linear-gradient(180deg, rgba(251, 248, 241, 0.96) 0%, rgba(247, 242, 231, 0.92) 100%);
+}
+
+.portal-action-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.portal-action-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(94, 113, 73, 0.1);
+}
+
+.portal-action-card:hover {
+  border-color: rgba(63, 125, 35, 0.24);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.portal-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(92, 127, 69, 0.1);
+  color: #365722;
+  font-size: 18px;
+}
+
+.portal-inline-pill {
+  margin-inline-end: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: #47663a;
+  background: rgba(92, 127, 69, 0.1);
+}
+
+.portal-quick-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.portal-quick-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(94, 113, 73, 0.1);
+}
+
+.public-query-hero-card {
+  border: 1px solid rgba(94, 113, 73, 0.12);
+  border-radius: 28px !important;
+  background:
+    linear-gradient(115deg, rgba(11, 43, 17, 0.68) 0%, rgba(19, 59, 29, 0.56) 52%, rgba(27, 67, 31, 0.48) 100%),
+    url('./assets/login-tea-hero.jpg');
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 18px 40px rgba(30, 56, 24, 0.1);
+}
+
+.public-query-hero-card .ant-card-body {
+  padding: 28px 30px;
+}
+
+.public-query-hero-card .admin-hero-badge {
+  color: #ecdfb2;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.public-query-hero-card .admin-hero-title,
+.public-query-hero-card .admin-hero-description,
+.public-query-hero-card .ant-typography,
+.public-query-hero-card .ant-typography-secondary {
+  color: #f8f5ee !important;
+}
+
+.public-query-input-group .ant-input {
+  height: 48px;
+  border-radius: 14px 0 0 14px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.public-query-input-group .ant-btn {
+  height: 48px;
+  border-radius: 0 14px 14px 0;
+}
+
+.public-query-sidecard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+}
+
+.public-query-sideicon {
+  font-size: 28px;
+  color: #f0dfa5;
+}
+
+.public-query-descriptions .ant-descriptions-item {
+  padding-bottom: 10px;
+}
+
+.public-query-score-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.public-query-score-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(232, 245, 233, 0.9) 0%, rgba(245, 251, 242, 0.9) 100%);
+}
+
+.public-query-score-main strong {
+  color: #23611b;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.public-query-score-main span {
+  color: #5c7f45;
+  font-weight: 600;
+}
+
+.public-query-score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
 .trace-code-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;
@@ -734,11 +910,13 @@ a {
   border-radius: 18px;
 }
 
+.app-sider--portal .ant-menu,
 .app-sider--admin .ant-menu {
   margin: 0 10px;
   background: transparent !important;
 }
 
+.app-sider--portal .ant-menu-item,
 .app-sider--admin .ant-menu-item {
   height: 46px;
   margin-block: 6px;
@@ -746,12 +924,14 @@ a {
   color: #36452c;
 }
 
+.app-sider--portal .ant-menu-item-selected,
 .app-sider--admin .ant-menu-item-selected {
   background: linear-gradient(90deg, rgba(226, 239, 219, 0.9) 0%, rgba(213, 233, 204, 0.92) 100%) !important;
   color: #24461a !important;
   font-weight: 600;
 }
 
+.app-sider--portal .ant-menu-item:hover,
 .app-sider--admin .ant-menu-item:hover {
   background: rgba(226, 239, 219, 0.5) !important;
   color: #24461a !important;
@@ -824,7 +1004,8 @@ a {
 
   .admin-overview-grid,
   .admin-status-summary,
-  .register-hero-metrics {
+  .register-hero-metrics,
+  .public-query-score-grid {
     grid-template-columns: 1fr;
   }
 
@@ -833,6 +1014,10 @@ a {
   .admin-toolbar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .portal-action-card {
+    grid-template-columns: 1fr;
   }
 
   .admin-profile-descriptions .ant-descriptions-item-label {
@@ -876,6 +1061,10 @@ a {
   }
 
   .app-layout--admin .app-content {
+    padding: 20px 16px;
+  }
+
+  .app-layout--portal .app-content {
     padding: 20px 16px;
   }
 }
