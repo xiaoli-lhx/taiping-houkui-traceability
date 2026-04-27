@@ -19,6 +19,7 @@ type AdminService struct {
 type UserListFilter struct {
 	Keyword        string
 	RoleCode       string
+	Status         string
 	ApprovalStatus string
 }
 
@@ -62,6 +63,9 @@ func (s *AdminService) ListUsers(filter UserListFilter) ([]model.User, error) {
 	if roleCode := strings.TrimSpace(filter.RoleCode); roleCode != "" {
 		query = query.Where("role_code = ?", roleCode)
 	}
+	if status := strings.TrimSpace(filter.Status); status != "" {
+		query = query.Where("status = ?", status)
+	}
 	if approvalStatus := strings.TrimSpace(filter.ApprovalStatus); approvalStatus != "" {
 		query = query.Where("approval_status = ?", approvalStatus)
 	}
@@ -74,11 +78,11 @@ func (s *AdminService) ListUsers(filter UserListFilter) ([]model.User, error) {
 }
 
 func (s *AdminService) ListRegistrations(status string) ([]model.User, error) {
-	filter := UserListFilter{ApprovalStatus: strings.TrimSpace(status)}
-	if filter.ApprovalStatus == "" {
-		filter.ApprovalStatus = model.ApprovalPending
-	}
-	return s.ListUsers(filter)
+	return s.ListUsers(buildRegistrationFilter(status))
+}
+
+func (s *AdminService) GetUser(userID uint) (*model.User, error) {
+	return s.getUser(userID)
 }
 
 func (s *AdminService) ApproveRegistration(userID, adminID uint) (*model.User, error) {
@@ -291,4 +295,17 @@ func normalizeFeedbackStatus(status string) string {
 	default:
 		return ""
 	}
+}
+
+func buildRegistrationFilter(status string) UserListFilter {
+	filter := UserListFilter{}
+	switch strings.TrimSpace(status) {
+	case "":
+		filter.ApprovalStatus = model.ApprovalPending
+	case model.UserStatusDisabled:
+		filter.Status = model.UserStatusDisabled
+	default:
+		filter.ApprovalStatus = strings.TrimSpace(status)
+	}
+	return filter
 }

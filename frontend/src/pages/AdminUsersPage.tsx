@@ -171,7 +171,7 @@ export function AdminUsersPage() {
       <Card bordered={false} className="admin-hero-card admin-hero-card--section">
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
           <Tag bordered={false} className="admin-hero-badge">
-            User Governance Console
+            用户治理中心
           </Tag>
           <Typography.Title level={2} className="admin-hero-title">
             用户管理

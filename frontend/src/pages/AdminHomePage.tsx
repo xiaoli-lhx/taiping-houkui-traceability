@@ -80,7 +80,7 @@ export function AdminHomePage() {
           <Col xs={24} lg={15}>
             <Space direction="vertical" size={12}>
               <Tag bordered={false} className="admin-hero-badge">
-                Admin Control Deck
+                管理控制台
               </Tag>
               <Typography.Title level={2} className="admin-hero-title">
                 管理员工作台

@@ -39,6 +39,10 @@ export function RectificationPage() {
     void loadTasks()
   }, [loadTasks])
 
+  const pendingCount = items.filter((item) => item.status === 'pending_submission').length
+  const submittedCount = items.filter((item) => item.status === 'submitted').length
+  const completedCount = items.filter((item) => item.status === 'completed').length
+
   const columns = useMemo(
     () => [
       {
@@ -76,12 +80,7 @@ export function RectificationPage() {
           </Typography.Paragraph>
         ),
       },
-      {
-        title: '更新时间',
-        dataIndex: 'updated_at',
-        key: 'updated_at',
-        render: formatDateTime,
-      },
+      { title: '更新时间', dataIndex: 'updated_at', key: 'updated_at', render: formatDateTime },
       {
         title: '操作',
         key: 'action',
@@ -132,35 +131,65 @@ export function RectificationPage() {
   }
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Card>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          整改任务
-        </Typography.Title>
-        <Typography.Text type="secondary">查看监管驳回后分配到当前角色的整改任务，并提交整改说明。</Typography.Text>
+    <Space direction="vertical" size={16} className="admin-page-stack">
+      <Card bordered={false} className="admin-hero-card portal-hero-card">
+        <Space direction="vertical" size={12}>
+          <Tag bordered={false} className="admin-hero-badge">
+            整改任务工作区
+          </Tag>
+          <Typography.Title level={2} className="admin-hero-title">
+            整改任务
+          </Typography.Title>
+          <Typography.Paragraph className="admin-hero-description">
+            查看监管驳回后分配到当前角色的整改任务，整理补充信息并提交整改说明，形成复审闭环。
+          </Typography.Paragraph>
+          <Space wrap>
+            <Select
+              allowClear
+              placeholder="按整改状态筛选"
+              style={{ width: 180 }}
+              value={selectedStatus || undefined}
+              options={[
+                { label: '待整改', value: 'pending_submission' },
+                { label: '待复审', value: 'submitted' },
+                { label: '已完成', value: 'completed' },
+              ]}
+              onChange={(value) => setSelectedStatus(value || '')}
+            />
+            <Button icon={<ReloadOutlined />} onClick={() => void loadTasks()}>
+              刷新
+            </Button>
+          </Space>
+        </Space>
       </Card>
 
       {error ? <Alert showIcon type="error" message={error} /> : null}
       {success ? <Alert showIcon type="success" message={success} /> : null}
 
-      <Card>
-        <Space wrap style={{ marginBottom: 16 }}>
-          <Select
-            allowClear
-            placeholder="按整改状态筛选"
-            style={{ width: 180 }}
-            value={selectedStatus || undefined}
-            options={[
-              { label: '待整改', value: 'pending_submission' },
-              { label: '待复审', value: 'submitted' },
-              { label: '已完成', value: 'completed' },
-            ]}
-            onChange={(value) => setSelectedStatus(value || '')}
-          />
-          <Button icon={<ReloadOutlined />} onClick={() => void loadTasks()}>
-            刷新
-          </Button>
-        </Space>
+      <Space className="admin-overview-grid">
+        <Card bordered={false} className="admin-stat-card admin-stat-card--warning">
+          <Typography.Text className="admin-stat-label">待整改</Typography.Text>
+          <Typography.Title level={2} className="admin-stat-value">{pendingCount}</Typography.Title>
+        </Card>
+        <Card bordered={false} className="admin-stat-card admin-stat-card--danger">
+          <Typography.Text className="admin-stat-label">待复审</Typography.Text>
+          <Typography.Title level={2} className="admin-stat-value">{submittedCount}</Typography.Title>
+        </Card>
+        <Card bordered={false} className="admin-stat-card admin-stat-card--success">
+          <Typography.Text className="admin-stat-label">已完成</Typography.Text>
+          <Typography.Title level={2} className="admin-stat-value">{completedCount}</Typography.Title>
+        </Card>
+      </Space>
+
+      <Card bordered={false} className="admin-section-card admin-table-card">
+        <div className="admin-table-summary">
+          <div>
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              整改任务列表
+            </Typography.Title>
+            <Typography.Text type="secondary">当前共 {items.length} 项整改任务</Typography.Text>
+          </div>
+        </div>
 
         <Table<RectificationTask>
           rowKey="id"

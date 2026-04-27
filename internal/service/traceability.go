@@ -11,6 +11,9 @@ import (
 	"tea-traceability-system/internal/model"
 )
 
+var ErrAuditRequiresRectificationReview = errors.New("当前批次存在未完成整改任务，请通过整改复审完成闭环后再执行通过审核")
+var ErrRectificationResponseRequired = errors.New("整改说明不能为空")
+
 var stageAliases = map[string]string{
 	"planting":     model.StagePlanting,
 	"种植":           model.StagePlanting,
@@ -445,6 +448,16 @@ func (s *TraceService) CreateAudit(batchID uint, input AuditInput, operator Oper
 		ReviewedAt:    time.Now(),
 	}
 
+	if audit.Status == model.AuditStatusApproved {
+		hasOpenRectification, err := s.hasOpenRectificationTask(batchID)
+		if err != nil {
+			return nil, err
+		}
+		if shouldBlockApprovalForOpenRectification(audit.Status, hasOpenRectification) {
+			return nil, ErrAuditRequiresRectificationReview
+		}
+	}
+
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&audit).Error; err != nil {
 			return err
@@ -519,6 +532,9 @@ func (s *TraceService) SubmitRectification(id uint, input RectificationSubmitInp
 	}
 	if task.Status != model.RectificationStatusPendingSubmission {
 		return nil, errors.New("当前整改任务不处于待提交状态")
+	}
+	if err := validateRectificationResponse(input.ResponseComment); err != nil {
+		return nil, err
 	}
 
 	now := time.Now()
@@ -667,6 +683,16 @@ func (s *TraceService) getRectificationTask(id uint) (*model.RectificationTask, 
 	return &task, nil
 }
 
+func (s *TraceService) hasOpenRectificationTask(batchID uint) (bool, error) {
+	var count int64
+	if err := s.db.Model(&model.RectificationTask{}).
+		Where("batch_id = ? AND status IN ?", batchID, []string{model.RectificationStatusPendingSubmission, model.RectificationStatusSubmitted}).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (s *TraceService) createOrOverwriteRectificationTaskTx(tx *gorm.DB, batchID uint, stage *model.TraceStageRecord, audit *model.AuditRecord) error {
 	responsibleRole := model.RoleEnterprise
 	if stage != nil && (stage.Stage == model.StagePlanting || stage.Stage == model.StagePicking) {
@@ -797,6 +823,17 @@ func defaultAuditAction(action string) string {
 		return "review"
 	}
 	return strings.TrimSpace(action)
+}
+
+func validateRectificationResponse(responseComment string) error {
+	if strings.TrimSpace(responseComment) == "" {
+		return ErrRectificationResponseRequired
+	}
+	return nil
+}
+
+func shouldBlockApprovalForOpenRectification(auditStatus string, hasOpenRectification bool) bool {
+	return defaultAuditStatus(auditStatus) == model.AuditStatusApproved && hasOpenRectification
 }
 
 func applyBatchScope(query *gorm.DB, roleCode, organization string, userID uint) *gorm.DB {

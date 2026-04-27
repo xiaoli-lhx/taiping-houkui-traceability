@@ -32,6 +32,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	users, err := h.adminService.ListUsers(service.UserListFilter{
 		Keyword:        c.Query("keyword"),
 		RoleCode:       c.Query("role"),
+		Status:         c.Query("status"),
 		ApprovalStatus: c.Query("approval_status"),
 	})
 	if err != nil {
@@ -54,20 +55,17 @@ func (h *AdminHandler) GetUser(c *gin.Context) {
 		return
 	}
 
-	users, err := h.adminService.ListUsers(service.UserListFilter{})
+	user, err := h.adminService.GetUser(userID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			responsex.Fail(c, http.StatusNotFound, "用户不存在")
+			return
+		}
 		responsex.Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	for _, user := range users {
-		if user.ID == userID {
-			u := user
-			responsex.Success(c, service.BuildUserProfile(&u))
-			return
-		}
-	}
 
-	responsex.Fail(c, http.StatusNotFound, "用户不存在")
+	responsex.Success(c, service.BuildUserProfile(user))
 }
 
 func (h *AdminHandler) ListRegistrations(c *gin.Context) {

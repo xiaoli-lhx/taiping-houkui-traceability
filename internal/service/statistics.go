@@ -140,19 +140,72 @@ func (s *StatisticsService) GetRiskAlerts() ([]RiskAlertItem, error) {
 		return nil, err
 	}
 
+	type latestEvaluationRow struct {
+		BatchID    uint
+		TotalScore float64
+	}
+	type countRow struct {
+		BatchID uint
+		Count   int64
+	}
+
+	latestEvaluationScores := make(map[uint]float64, len(batches))
+	var latestEvaluationRows []latestEvaluationRow
+	if err := s.db.Table("quality_evaluations qe").
+		Select("qe.batch_id, qe.total_score").
+		Where(
+			"qe.id = (?)",
+			s.db.Table("quality_evaluations qe2").
+				Select("qe2.id").
+				Where("qe2.batch_id = qe.batch_id").
+				Order("qe2.evaluated_at DESC, qe2.id DESC").
+				Limit(1),
+		).
+		Scan(&latestEvaluationRows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range latestEvaluationRows {
+		latestEvaluationScores[row.BatchID] = row.TotalScore
+	}
+
+	stageCounts := make(map[uint]int64, len(batches))
+	var stageCountRows []countRow
+	if err := s.db.Model(&model.TraceStageRecord{}).
+		Select("batch_id, COUNT(*) AS count").
+		Where("updated_at >= ?", time.Now().AddDate(0, 0, -7)).
+		Group("batch_id").
+		Scan(&stageCountRows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range stageCountRows {
+		stageCounts[row.BatchID] = row.Count
+	}
+
+	feedbackCounts := make(map[uint]int64, len(batches))
+	var feedbackCountRows []countRow
+	if err := s.db.Model(&model.UserFeedback{}).
+		Select("batch_id, COUNT(*) AS count").
+		Where("batch_id IS NOT NULL").
+		Where("status <> ? AND created_at >= ?", model.FeedbackStatusResolved, time.Now().AddDate(0, 0, -30)).
+		Group("batch_id").
+		Scan(&feedbackCountRows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range feedbackCountRows {
+		feedbackCounts[row.BatchID] = row.Count
+	}
+
 	alerts := make([]RiskAlertItem, 0)
 	for _, batch := range batches {
-		var latestEvaluation model.QualityEvaluation
-		evaluationErr := s.db.Where("batch_id = ?", batch.ID).Order("evaluated_at DESC, id DESC").First(&latestEvaluation).Error
-		if evaluationErr == nil && latestEvaluation.TotalScore < 75 {
+		if totalScore, exists := latestEvaluationScores[batch.ID]; exists && totalScore < 75 {
 			alerts = append(alerts, RiskAlertItem{
 				Type:        "low_score",
 				Severity:    "high",
 				BatchID:     batch.ID,
 				BatchCode:   batch.BatchCode,
 				TraceCode:   batch.TraceCode,
-				Message:     fmt.Sprintf("批次最新品质得分 %.2f，低于风险阈值 75 分。", round2(latestEvaluation.TotalScore)),
-				MetricValue: round2(latestEvaluation.TotalScore),
+				Message:     fmt.Sprintf("批次最新品质得分 %.2f，低于风险阈值 75 分。", round2(totalScore)),
+				MetricValue: round2(totalScore),
 			})
 		}
 
@@ -168,12 +221,7 @@ func (s *StatisticsService) GetRiskAlerts() ([]RiskAlertItem, error) {
 			})
 		}
 
-		var stageCount int64
-		if err := s.db.Model(&model.TraceStageRecord{}).
-			Where("batch_id = ? AND updated_at >= ?", batch.ID, time.Now().AddDate(0, 0, -7)).
-			Count(&stageCount).Error; err != nil {
-			return nil, err
-		}
+		stageCount := stageCounts[batch.ID]
 		if stageCount >= 3 {
 			alerts = append(alerts, RiskAlertItem{
 				Type:        "frequent_stage_updates",
@@ -186,12 +234,7 @@ func (s *StatisticsService) GetRiskAlerts() ([]RiskAlertItem, error) {
 			})
 		}
 
-		var feedbackCount int64
-		if err := s.db.Model(&model.UserFeedback{}).
-			Where("batch_id = ? AND status <> ? AND created_at >= ?", batch.ID, model.FeedbackStatusResolved, time.Now().AddDate(0, 0, -30)).
-			Count(&feedbackCount).Error; err != nil {
-			return nil, err
-		}
+		feedbackCount := feedbackCounts[batch.ID]
 		if feedbackCount >= 3 {
 			alerts = append(alerts, RiskAlertItem{
 				Type:        "feedback_spike",

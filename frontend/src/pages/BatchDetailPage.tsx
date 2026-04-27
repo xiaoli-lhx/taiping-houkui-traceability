@@ -122,29 +122,35 @@ export function BatchDetailPage() {
   )
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <Space direction="vertical" size={16} className="admin-page-stack">
       {error ? <Alert showIcon type="error" message={error} /> : null}
       {success ? <Alert showIcon type="success" message={success} /> : null}
 
-      <Card loading={loading}>
+      <Card bordered={false} className="admin-hero-card portal-hero-card" loading={loading}>
         <Row justify="space-between" align="middle" gutter={[16, 16]}>
-          <Col>
-            <Typography.Title level={3} style={{ margin: 0 }}>
-              {batch?.batch_code ?? '批次详情'}
-            </Typography.Title>
-            <Space size={8} wrap style={{ marginTop: 8 }}>
-              <Tag color={getBatchStatusMeta(batch?.status).color}>{getBatchStatusMeta(batch?.status).text}</Tag>
-              <Tag color={getAuditStatusMeta(batch?.audit_status).color}>
-                {getAuditStatusMeta(batch?.audit_status).text}
+          <Col xs={24} xl={15}>
+            <Space direction="vertical" size={12}>
+              <Tag bordered={false} className="admin-hero-badge">
+                批次详情工作区
               </Tag>
-              <Tag color={getRectificationStatusMeta(batch?.rectification_status).color}>
-                {getRectificationStatusMeta(batch?.rectification_status).text}
-              </Tag>
-              <Tag>{batch?.latest_grade || '暂无等级'}</Tag>
+              <Typography.Title level={2} className="admin-hero-title">
+                {batch?.batch_code ?? '批次详情'}
+              </Typography.Title>
+              <Space size={8} wrap>
+                <Tag color={getBatchStatusMeta(batch?.status).color}>{getBatchStatusMeta(batch?.status).text}</Tag>
+                <Tag color={getAuditStatusMeta(batch?.audit_status).color}>{getAuditStatusMeta(batch?.audit_status).text}</Tag>
+                <Tag color={getRectificationStatusMeta(batch?.rectification_status).color}>
+                  {getRectificationStatusMeta(batch?.rectification_status).text}
+                </Tag>
+                <Tag>{batch?.latest_grade || '暂无等级'}</Tag>
+              </Space>
+              <Typography.Paragraph className="admin-hero-description">
+                查看批次基础资料、溯源链路、审核记录与品质概览，并根据角色补录生产阶段或进入品质评估与审核流程。
+              </Typography.Paragraph>
             </Space>
           </Col>
-          <Col>
-            <Space wrap>
+          <Col xs={24} xl={9}>
+            <Space wrap className="admin-hero-actions">
               <Button icon={<EditOutlined />}>
                 <Link to={backPath}>返回列表</Link>
               </Button>
@@ -169,10 +175,37 @@ export function BatchDetailPage() {
       </Card>
 
       <Row gutter={[16, 16]}>
+        <Col xs={24} md={12} xl={3}>
+          <Card bordered={false} className="admin-stat-card admin-stat-card--primary">
+            <Typography.Text className="admin-stat-label">阶段数</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">{batch?.stage_records?.length ?? 0}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={12} xl={3}>
+          <Card bordered={false} className="admin-stat-card admin-stat-card--success">
+            <Typography.Text className="admin-stat-label">审核记录</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">{audits.length}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={12} xl={3}>
+          <Card bordered={false} className="admin-stat-card admin-stat-card--warning">
+            <Typography.Text className="admin-stat-label">重量(kg)</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">{batch?.quantity_kg ?? 0}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={12} xl={3}>
+          <Card bordered={false} className="admin-stat-card admin-stat-card--danger">
+            <Typography.Text className="admin-stat-label">品质等级</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">{batch?.latest_grade || '-'}</Typography.Title>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
         <Col xs={24} xl={14}>
-          <Card title="批次基础信息" loading={loading}>
+          <Card bordered={false} className="admin-section-card" title="批次基础信息" loading={loading}>
             {batch ? (
-              <Descriptions column={2} bordered size="small">
+              <Descriptions column={2} bordered size="small" className="admin-profile-descriptions">
                 <Descriptions.Item label="溯源码">{batch.trace_code}</Descriptions.Item>
                 <Descriptions.Item label="产品编号">{batch.product_code}</Descriptions.Item>
                 <Descriptions.Item label="茶名">{batch.tea_name}</Descriptions.Item>
@@ -199,7 +232,7 @@ export function BatchDetailPage() {
           </Card>
         </Col>
         <Col xs={24} xl={10}>
-          <Card title="品质概览" loading={loading}>
+          <Card bordered={false} className="admin-section-card" title="品质概览" loading={loading}>
             {latestEvaluation ? (
               <Descriptions column={1} size="small">
                 <Descriptions.Item label="综合得分">{latestEvaluation.total_score}</Descriptions.Item>
@@ -216,11 +249,11 @@ export function BatchDetailPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={14}>
-          <Card title="溯源阶段链路" loading={loading}>
+          <Card bordered={false} className="admin-section-card" title="溯源阶段链路" loading={loading}>
             {batch?.stage_records?.length ? (
               <Timeline
                 items={batch.stage_records.map((record) => ({
-                  color: 'blue',
+                  color: 'green',
                   children: (
                     <div>
                       <Space wrap>
@@ -231,7 +264,7 @@ export function BatchDetailPage() {
                         <Typography.Text>{record.description}</Typography.Text>
                       </div>
                       <Typography.Text type="secondary">
-                        {record.location} | {record.operator_name} | {formatDateTime(record.occurred_at)}
+                        {record.location} · {record.operator_name} · {formatDateTime(record.occurred_at)}
                       </Typography.Text>
                     </div>
                   ),
@@ -243,7 +276,7 @@ export function BatchDetailPage() {
           </Card>
         </Col>
         <Col xs={24} xl={10}>
-          <Card title="审核记录" loading={loading}>
+          <Card bordered={false} className="admin-section-card admin-table-card" title="审核记录" loading={loading}>
             <Table<AuditRecord>
               rowKey="id"
               size="small"
@@ -256,13 +289,7 @@ export function BatchDetailPage() {
         </Col>
       </Row>
 
-      <Drawer
-        title="新增溯源阶段"
-        width={480}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        destroyOnClose
-      >
+      <Drawer title="新增溯源阶段" width={480} open={drawerOpen} onClose={() => setDrawerOpen(false)} destroyOnClose>
         {canEditStage ? (
           <Form form={form} layout="vertical" initialValues={initialStageForm} onFinish={handleAddStage}>
             <Form.Item label="阶段类型" name="stage" rules={[{ required: true, message: '请选择阶段类型' }]}>

@@ -69,7 +69,7 @@ export function PublicQueryPage() {
           <Col xs={24} lg={14}>
             <Space direction="vertical" size={12}>
               <Tag bordered={false} className="admin-hero-badge">
-                Public Trace Query
+                公众溯源查询
               </Tag>
               <Typography.Title level={2} className="admin-hero-title">
                 太平猴魁溯源查询

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AuditOutlined, EyeOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
 import {
   Alert,
   Button,
@@ -17,19 +18,13 @@ import {
   Timeline,
   Typography,
 } from 'antd'
-import { EyeOutlined } from '@ant-design/icons'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { getRoleLabel, withPortalPrefix } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
 import { EmptyState } from '../components/EmptyState'
 import { api } from '../lib/api'
-import {
-  formatDateTime,
-  getAuditStatusMeta,
-  getBatchStatusMeta,
-  getRectificationStatusMeta,
-} from '../lib/display'
+import { formatDateTime, getAuditStatusMeta, getBatchStatusMeta, getRectificationStatusMeta } from '../lib/display'
 import type { AuditCreateRequest, AuditRecord, RectificationTask, TeaBatch } from '../types'
 
 const initialAuditForm: AuditCreateRequest = {
@@ -66,7 +61,6 @@ export function ReviewPage() {
   const loadBatches = useCallback(async () => {
     const result = await api.getBatches(token, { pageSize: 100 })
     setBatches(result.items)
-
     const candidateId = presetBatchId || result.items[0]?.id?.toString() || ''
     if (!selectedBatchId && candidateId) {
       setSelectedBatchId(candidateId)
@@ -159,17 +153,72 @@ export function ReviewPage() {
     }
   }
 
+  const pendingAuditCount = batches.filter((item) => item.audit_status === 'pending').length
+  const pendingRectificationCount = rectifications.filter((item) => item.status === 'submitted').length
+
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Card>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          监管审核中心
-        </Typography.Title>
-        <Typography.Text type="secondary">监管方可在此执行批次审核与整改复审，统一查看批次状态和复审任务。</Typography.Text>
+    <Space direction="vertical" size={16} className="admin-page-stack">
+      <Card bordered={false} className="admin-hero-card portal-hero-card">
+        <Row gutter={[24, 24]} align="middle">
+          <Col xs={24} lg={15}>
+            <Space direction="vertical" size={12}>
+              <Tag bordered={false} className="admin-hero-badge">
+                Regulatory Review Center
+              </Tag>
+              <Typography.Title level={2} className="admin-hero-title">
+                监管审核中心
+              </Typography.Title>
+              <Typography.Paragraph className="admin-hero-description">
+                集中处理批次审核与整改复审，统一查看溯源链路、审核历史和整改说明，形成监管闭环。
+              </Typography.Paragraph>
+            </Space>
+          </Col>
+          <Col xs={24} lg={9}>
+            <div className="portal-action-grid">
+              <div className="portal-action-card">
+                <div className="portal-action-icon">
+                  <AuditOutlined />
+                </div>
+                <div>
+                  <Typography.Text strong>待审核批次</Typography.Text>
+                  <div>
+                    <Typography.Text type="secondary">{pendingAuditCount} 项待处理</Typography.Text>
+                  </div>
+                </div>
+              </div>
+              <div className="portal-action-card">
+                <div className="portal-action-icon">
+                  <SafetyCertificateOutlined />
+                </div>
+                <div>
+                  <Typography.Text strong>整改复审</Typography.Text>
+                  <div>
+                    <Typography.Text type="secondary">{pendingRectificationCount} 项待复审</Typography.Text>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Col>
+        </Row>
       </Card>
 
       {error ? <Alert showIcon type="error" message={error} /> : null}
       {success ? <Alert showIcon type="success" message={success} /> : null}
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={12}>
+          <Card bordered={false} className="admin-stat-card admin-stat-card--warning">
+            <Typography.Text className="admin-stat-label">待审核批次</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">{pendingAuditCount}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={12}>
+          <Card bordered={false} className="admin-stat-card admin-stat-card--danger">
+            <Typography.Text className="admin-stat-label">待复审整改</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">{pendingRectificationCount}</Typography.Title>
+          </Card>
+        </Col>
+      </Row>
 
       <Tabs
         items={[
@@ -179,7 +228,7 @@ export function ReviewPage() {
             children: (
               <Row gutter={[16, 16]}>
                 <Col xs={24} xl={11}>
-                  <Card title="批次审核列表">
+                  <Card bordered={false} className="admin-section-card admin-table-card" title="批次审核列表">
                     <Table<TeaBatch>
                       rowKey="id"
                       loading={loading}
@@ -219,6 +268,8 @@ export function ReviewPage() {
 
                 <Col xs={24} xl={13}>
                   <Card
+                    bordered={false}
+                    className="admin-section-card"
                     title={selectedBatch ? `审核详情：${selectedBatch.batch_code}` : '审核详情'}
                     extra={
                       <Space>
@@ -239,14 +290,10 @@ export function ReviewPage() {
                           <Descriptions.Item label="批次码">{selectedBatch.batch_code}</Descriptions.Item>
                           <Descriptions.Item label="溯源码">{selectedBatch.trace_code}</Descriptions.Item>
                           <Descriptions.Item label="业务状态">
-                            <Tag color={getBatchStatusMeta(selectedBatch.status).color}>
-                              {getBatchStatusMeta(selectedBatch.status).text}
-                            </Tag>
+                            <Tag color={getBatchStatusMeta(selectedBatch.status).color}>{getBatchStatusMeta(selectedBatch.status).text}</Tag>
                           </Descriptions.Item>
                           <Descriptions.Item label="审核状态">
-                            <Tag color={getAuditStatusMeta(selectedBatch.audit_status).color}>
-                              {getAuditStatusMeta(selectedBatch.audit_status).text}
-                            </Tag>
+                            <Tag color={getAuditStatusMeta(selectedBatch.audit_status).color}>{getAuditStatusMeta(selectedBatch.audit_status).text}</Tag>
                           </Descriptions.Item>
                           <Descriptions.Item label="整改状态">
                             <Tag color={getRectificationStatusMeta(selectedBatch.rectification_status).color}>
@@ -305,7 +352,7 @@ export function ReviewPage() {
             key: 'rectifications',
             label: '整改复审',
             children: (
-              <Card title="待复审整改任务">
+              <Card bordered={false} className="admin-section-card admin-table-card" title="待复审整改任务">
                 <Table<RectificationTask>
                   rowKey="id"
                   loading={loading}

@@ -44,7 +44,7 @@ export function ConsumerHomePage() {
           <Col xs={24} lg={14}>
             <Space direction="vertical" size={12}>
               <Tag bordered={false} className="admin-hero-badge">
-                Consumer Query Center
+                消费者查询中心
               </Tag>
               <Typography.Title level={2} className="admin-hero-title">
                 消费者中心

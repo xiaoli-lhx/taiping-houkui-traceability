@@ -93,7 +93,7 @@ export function RegisterPage() {
             <Typography.Title level={2} className="login-card-title">
               账号注册
             </Typography.Title>
-            <Typography.Text className="login-card-subtitle">Tea Traceability System Enrollment</Typography.Text>
+            <Typography.Text className="login-card-subtitle">太平猴魁溯源系统新用户注册</Typography.Text>
             <Typography.Text type="secondary">请填写注册信息，提交后由管理员审核激活。</Typography.Text>
           </Space>
 

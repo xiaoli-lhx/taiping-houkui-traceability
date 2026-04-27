@@ -1,19 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Descriptions,
-  Form,
-  Input,
-  InputNumber,
-  Row,
-  Space,
-  Statistic,
-  Table,
-  Typography,
-} from 'antd'
+import { Button, Card, Col, Descriptions, Form, Input, InputNumber, Row, Space, Statistic, Table, Tag, Typography, Alert } from 'antd'
+import { TrophyOutlined } from '@ant-design/icons'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { withPortalPrefix } from '../auth/roles'
@@ -86,18 +73,23 @@ export function QualityEvaluationPage() {
   }
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Card>
+    <Space direction="vertical" size={16} className="admin-page-stack">
+      <Card bordered={false} className="admin-hero-card portal-hero-card">
         <Row justify="space-between" align="middle" gutter={[16, 16]}>
-          <Col>
-            <Typography.Title level={3} style={{ margin: 0 }}>
-              品质辅助评估
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              基于外形、色泽、香气、滋味四项指标，自动生成综合得分与等级判定。
-            </Typography.Text>
+          <Col xs={24} xl={15}>
+            <Space direction="vertical" size={12}>
+              <Tag bordered={false} className="admin-hero-badge">
+                品质评估工作区
+              </Tag>
+              <Typography.Title level={2} className="admin-hero-title">
+                品质辅助评估
+              </Typography.Title>
+              <Typography.Paragraph className="admin-hero-description">
+                基于外形、色泽、香气、滋味等指标录入评估结果，自动生成综合得分、等级判定与雷达图。
+              </Typography.Paragraph>
+            </Space>
           </Col>
-          <Col>
+          <Col xs={24} xl={9}>
             <Button>
               <Link to={batchId ? withPortalPrefix(user, `/batches/${batchId}`) : withPortalPrefix(user, '/batches')}>
                 返回批次详情
@@ -111,7 +103,8 @@ export function QualityEvaluationPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={11}>
-          <Card title="录入品质指标">
+          <Card bordered={false} className="admin-section-card">
+            <Typography.Title level={4} style={{ marginTop: 0 }}>录入品质指标</Typography.Title>
             <Form form={form} layout="vertical" onFinish={handleSubmit}>
               <Form.Item label="批次 ID">
                 <Input value={batchId} disabled />
@@ -125,18 +118,10 @@ export function QualityEvaluationPage() {
                   <Space direction="vertical" size={12} style={{ width: '100%' }}>
                     {fields.map((field, index) => (
                       <Card key={field.key} size="small" title={metricTemplates[index]?.metric_name}>
-                        <Form.Item
-                          hidden
-                          name={[field.name, 'metric_name']}
-                          rules={[{ required: true, message: '指标名称不能为空' }]}
-                        >
+                        <Form.Item hidden name={[field.name, 'metric_name']} rules={[{ required: true, message: '指标名称不能为空' }]}>
                           <Input />
                         </Form.Item>
-                        <Form.Item
-                          label="分值"
-                          name={[field.name, 'score']}
-                          rules={[{ required: true, message: '请输入分值' }]}
-                        >
+                        <Form.Item label="分值" name={[field.name, 'score']} rules={[{ required: true, message: '请输入分值' }]}>
                           <InputNumber min={0} max={100} style={{ width: '100%' }} />
                         </Form.Item>
                         <Form.Item label="说明" name={[field.name, 'comment']}>
@@ -148,7 +133,7 @@ export function QualityEvaluationPage() {
                 )}
               </Form.List>
 
-              <Button type="primary" htmlType="submit" loading={submitting} block disabled={!batchId}>
+              <Button type="primary" htmlType="submit" loading={submitting} block disabled={!batchId} icon={<TrophyOutlined />}>
                 生成品质评估
               </Button>
             </Form>
@@ -159,8 +144,8 @@ export function QualityEvaluationPage() {
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
             {result ? (
               <>
-                <Card title="评估结果概览">
-                  <Row gutter={16}>
+                <Card bordered={false} className="admin-section-card">
+                  <Row gutter={[16, 16]}>
                     <Col span={12}>
                       <Statistic title="综合得分" value={result.evaluation.total_score} precision={2} />
                     </Col>
@@ -176,7 +161,8 @@ export function QualityEvaluationPage() {
 
                 <QualityRadarCard items={result.radar_data} />
 
-                <Card title="指标明细">
+                <Card bordered={false} className="admin-section-card admin-table-card">
+                  <Typography.Title level={4} style={{ marginTop: 0 }}>指标明细</Typography.Title>
                   <Table
                     rowKey="metric_name"
                     size="small"
@@ -193,12 +179,9 @@ export function QualityEvaluationPage() {
                 </Card>
               </>
             ) : (
-              <Card title="最新评估结果">
-                {loadingLatest ? (
-                  <Typography.Text type="secondary">正在读取当前批次的最新评估结果...</Typography.Text>
-                ) : (
-                  <EmptyState description="当前批次暂无品质评估记录" />
-                )}
+              <Card bordered={false} className="admin-section-card">
+                <Typography.Title level={4} style={{ marginTop: 0 }}>最新评估结果</Typography.Title>
+                {loadingLatest ? <Typography.Text type="secondary">正在读取当前批次的最新评估结果...</Typography.Text> : <EmptyState description="当前批次暂无品质评估记录" />}
               </Card>
             )}
           </Space>

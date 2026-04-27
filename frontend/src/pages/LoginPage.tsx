@@ -97,7 +97,7 @@ export function LoginPage() {
             <Typography.Title level={2} className="login-card-title">
               欢迎登录
             </Typography.Title>
-            <Typography.Text className="login-card-subtitle">Tea Traceability &amp; Quality Assessment</Typography.Text>
+            <Typography.Text className="login-card-subtitle">太平猴魁溯源与品质评估系统入口</Typography.Text>
             <Typography.Text type="secondary">请选择用户类型并输入账号密码后登录。</Typography.Text>
           </Space>
 

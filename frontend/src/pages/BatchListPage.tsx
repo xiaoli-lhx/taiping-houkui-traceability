@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { EyeOutlined, PlusOutlined, SearchOutlined, TagsOutlined } from '@ant-design/icons'
 import {
   Alert,
   Button,
@@ -16,7 +17,6 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 
 import { hasRole, withPortalPrefix } from '../auth/roles'
@@ -54,6 +54,7 @@ export function BatchListPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const canCreateBatch = hasRole(user, 'enterprise')
+  const isFarmer = hasRole(user, 'farmer')
 
   const loadBatches = useCallback(
     async (values?: { keyword?: string; status?: string; audit_status?: string }) => {
@@ -105,20 +106,39 @@ export function BatchListPage() {
     }
   }
 
+  const batchStats = useMemo(
+    () => [
+      { label: '批次总数', value: batches.length, tone: 'primary' as const },
+      { label: '处理中', value: batches.filter((item) => item.status === 'processing').length, tone: 'warning' as const },
+      { label: '已完成', value: batches.filter((item) => item.status === 'completed').length, tone: 'success' as const },
+      { label: '待审核', value: batches.filter((item) => item.audit_status === 'pending').length, tone: 'danger' as const },
+    ],
+    [batches],
+  )
+
   const columns = useMemo(
     () => [
       {
-        title: '批次码',
+        title: '批次信息',
         dataIndex: 'batch_code',
         key: 'batch_code',
         render: (value: string, record: TeaBatch) => (
-          <Space direction="vertical" size={0}>
+          <Space direction="vertical" size={2}>
             <Typography.Text strong>{value}</Typography.Text>
             <Typography.Text type="secondary">{record.trace_code}</Typography.Text>
           </Space>
         ),
       },
-      { title: '产地', dataIndex: 'origin', key: 'origin' },
+      {
+        title: '产地 / 主体',
+        key: 'origin',
+        render: (_: unknown, record: TeaBatch) => (
+          <Space direction="vertical" size={2}>
+            <Typography.Text>{record.origin}</Typography.Text>
+            <Typography.Text type="secondary">{record.farm_name || record.enterprise_name || '-'}</Typography.Text>
+          </Space>
+        ),
+      },
       {
         title: '业务状态',
         dataIndex: 'status',
@@ -147,7 +167,7 @@ export function BatchListPage() {
         title: '操作',
         key: 'action',
         render: (_: unknown, record: TeaBatch) => (
-          <Button type="link" icon={<EyeOutlined />}>
+          <Button type="link" icon={<EyeOutlined />} className="table-action-link">
             <Link to={withPortalPrefix(user, `/batches/${record.id}`)}>查看详情</Link>
           </Button>
         ),
@@ -157,25 +177,36 @@ export function BatchListPage() {
   )
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Card>
+    <Space direction="vertical" size={16} className="admin-page-stack">
+      <Card bordered={false} className="admin-hero-card portal-hero-card">
         <Row justify="space-between" align="middle" gutter={[16, 16]}>
-          <Col>
-            <Typography.Title level={3} style={{ margin: 0 }}>
-              茶叶批次管理
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              企业端可创建批次，茶农端可查看批次并在详情页补录阶段信息。
-            </Typography.Text>
+          <Col xs={24} xl={15}>
+            <Space direction="vertical" size={12}>
+              <Tag bordered={false} className="admin-hero-badge">
+                批次工作区
+              </Tag>
+              <Typography.Title level={2} className="admin-hero-title">
+                {isFarmer ? '我的批次' : '批次管理'}
+              </Typography.Title>
+              <Typography.Paragraph className="admin-hero-description">
+                {isFarmer
+                  ? '查看与自己相关的批次、审核状态与阶段链路，进入详情后补录种植、采摘和加工节点。'
+                  : '集中管理茶叶批次、溯源码和公开状态，支持创建批次并进入详情页补充阶段记录与品质数据。'}
+              </Typography.Paragraph>
+            </Space>
           </Col>
-          <Col>
-            {canCreateBatch ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawerOpen(true)}>
-                新建批次
+          <Col xs={24} xl={9}>
+            <Space wrap className="admin-hero-actions">
+              {canCreateBatch ? (
+                <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setDrawerOpen(true)}>
+                  新建批次
+                </Button>
+              ) : null}
+              <Button icon={<SearchOutlined />} size="large" onClick={() => void loadBatches(searchForm.getFieldsValue())}>
+                刷新列表
               </Button>
-            ) : (
-              <Tag color="gold">茶农角色无批次创建权限</Tag>
-            )}
+              {!canCreateBatch ? <Tag color="gold">当前角色无批次创建权限</Tag> : null}
+            </Space>
           </Col>
         </Row>
       </Card>
@@ -183,13 +214,35 @@ export function BatchListPage() {
       {error ? <Alert showIcon type="error" message={error} /> : null}
       {success ? <Alert showIcon type="success" message={success} /> : null}
 
-      <Card title="筛选条件">
+      <Row gutter={[16, 16]}>
+        {batchStats.map((item) => (
+          <Col xs={24} sm={12} xl={6} key={item.label}>
+            <Card bordered={false} className={`admin-stat-card admin-stat-card--${item.tone}`}>
+              <Typography.Text className="admin-stat-label">{item.label}</Typography.Text>
+              <Typography.Title level={2} className="admin-stat-value">
+                {item.value}
+              </Typography.Title>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      <Card bordered={false} className="admin-section-card">
+        <div className="admin-table-summary">
+          <div>
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              筛选条件
+            </Typography.Title>
+            <Typography.Text type="secondary">按批次码、业务状态和审核状态快速定位目标批次。</Typography.Text>
+          </div>
+        </div>
         <Form
           form={searchForm}
           layout="inline"
           onFinish={(values) => {
             void loadBatches(values)
           }}
+          className="admin-toolbar-filters"
         >
           <Form.Item name="keyword">
             <Input placeholder="按批次码/溯源码/产品编号搜索" allowClear style={{ width: 280 }} />
@@ -226,7 +279,19 @@ export function BatchListPage() {
         </Form>
       </Card>
 
-      <Card title="批次列表">
+      <Card bordered={false} className="admin-section-card admin-table-card">
+        <div className="admin-table-summary">
+          <div>
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              批次列表
+            </Typography.Title>
+            <Typography.Text type="secondary">共 {batches.length} 条记录，支持进入详情页查看链路、审核与品质结果。</Typography.Text>
+          </div>
+          <Tag className="admin-inline-tag" color="green" icon={<TagsOutlined />}>
+            批次工作区
+          </Tag>
+        </div>
+
         <Table<TeaBatch>
           rowKey="id"
           loading={loading}
@@ -237,13 +302,7 @@ export function BatchListPage() {
         />
       </Card>
 
-      <Drawer
-        title="新建茶叶批次"
-        width={520}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        destroyOnClose
-      >
+      <Drawer title="新建茶叶批次" width={520} open={drawerOpen} onClose={() => setDrawerOpen(false)} destroyOnClose>
         <Form form={form} layout="vertical" initialValues={initialForm} onFinish={handleCreateBatch}>
           <Row gutter={16}>
             <Col span={12}>

@@ -1,7 +1,24 @@
 :root {
-  color: #1f1f1f;
-  background: #f5f7fb;
+  color: #24381f;
+  background: #f4f7f0;
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  --tea-900: #24381f;
+  --tea-800: #2f4a27;
+  --tea-700: #3f6433;
+  --tea-600: #5b7b4c;
+  --tea-500: #709060;
+  --tea-450: #7e9a6a;
+  --tea-100: #edf4e8;
+  --tea-050: #f7faf4;
+  --surface-0: #fcfdf9;
+  --surface-1: #f8fbf5;
+  --surface-2: #f1f6ed;
+  --surface-3: #e9f1e3;
+  --line-soft: rgba(86, 111, 72, 0.12);
+  --line-strong: rgba(86, 111, 72, 0.18);
+  --glow-soft: rgba(126, 154, 106, 0.12);
+  --gold-soft: rgba(200, 185, 126, 0.12);
+  --text-secondary: rgba(50, 68, 43, 0.72);
 }
 
 html,
@@ -10,8 +27,8 @@ body,
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at top left, rgba(22, 119, 255, 0.12), transparent 28%),
-    linear-gradient(180deg, #f7f9fc 0%, #eef3fb 100%);
+    radial-gradient(circle at top left, rgba(126, 154, 106, 0.1), transparent 24%),
+    linear-gradient(180deg, #f7faf4 0%, #eef4e9 100%);
 }
 
 body {
@@ -35,19 +52,19 @@ a {
 
 .app-layout--admin {
   background:
-    radial-gradient(circle at top left, rgba(220, 191, 115, 0.08), transparent 22%),
-    linear-gradient(180deg, #f6f3ec 0%, #f3efe6 100%);
+    radial-gradient(circle at top left, rgba(126, 154, 106, 0.1), transparent 20%),
+    linear-gradient(180deg, #f6faf3 0%, #eef4e9 100%);
 }
 
 .app-layout--portal {
   background:
-    radial-gradient(circle at top left, rgba(220, 191, 115, 0.06), transparent 24%),
-    linear-gradient(180deg, #f8f5ee 0%, #f3efe6 100%);
+    radial-gradient(circle at top left, rgba(126, 154, 106, 0.08), transparent 24%),
+    linear-gradient(180deg, #f8fbf6 0%, #eff5ea 100%);
 }
 
 .app-sider--portal {
-  background: linear-gradient(180deg, rgba(252, 250, 245, 0.98) 0%, rgba(247, 243, 235, 0.94) 100%) !important;
-  border-right: 1px solid rgba(94, 113, 73, 0.12);
+  background: linear-gradient(180deg, rgba(252, 253, 249, 0.98) 0%, rgba(245, 249, 241, 0.96) 100%) !important;
+  border-right: 1px solid var(--line-soft);
   box-shadow: 8px 0 28px rgba(30, 56, 24, 0.06);
 }
 
@@ -67,9 +84,9 @@ a {
   padding: 20px 18px 18px;
   border-radius: 24px;
   background:
-    radial-gradient(circle at top right, rgba(220, 191, 115, 0.14), transparent 30%),
-    linear-gradient(180deg, rgba(251, 248, 241, 0.92) 0%, rgba(246, 240, 228, 0.88) 100%);
-  border: 1px solid rgba(94, 113, 73, 0.12);
+    radial-gradient(circle at top right, var(--gold-soft), transparent 28%),
+    linear-gradient(180deg, rgba(252, 253, 249, 0.94) 0%, rgba(244, 248, 240, 0.9) 100%);
+  border: 1px solid var(--line-soft);
 }
 
 .sider-footer {
@@ -82,8 +99,8 @@ a {
   margin: 0 14px 16px;
   padding: 18px 16px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(94, 113, 73, 0.1);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--line-soft);
 }
 
 .role-tag-wrap {
@@ -103,14 +120,14 @@ a {
 }
 
 .app-header--admin {
-  background: rgba(249, 246, 239, 0.82);
-  border-bottom: 1px solid rgba(94, 113, 73, 0.12);
+  background: rgba(248, 251, 245, 0.82);
+  border-bottom: 1px solid var(--line-soft);
   box-shadow: 0 4px 20px rgba(30, 56, 24, 0.04);
 }
 
 .app-header--portal {
-  background: rgba(249, 246, 239, 0.82);
-  border-bottom: 1px solid rgba(94, 113, 73, 0.12);
+  background: rgba(248, 251, 245, 0.82);
+  border-bottom: 1px solid var(--line-soft);
   box-shadow: 0 4px 20px rgba(30, 56, 24, 0.04);
 }
 
@@ -127,12 +144,13 @@ a {
 }
 
 .app-header-link {
-  color: #2f6f1e;
+  color: var(--tea-700);
   font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .app-header-link:hover {
-  color: #1f5612;
+  color: var(--tea-800);
 }
 
 .app-content {
@@ -350,9 +368,11 @@ a {
 
 .login-card--glass {
   align-self: center;
-  border: 1px solid rgba(244, 238, 227, 0.72);
+  border: 1px solid rgba(231, 238, 225, 0.9);
   border-radius: 32px;
-  background: linear-gradient(180deg, rgba(251, 248, 241, 0.94) 0%, rgba(247, 242, 231, 0.9) 100%);
+  background:
+    radial-gradient(circle at top right, rgba(184, 203, 166, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(252, 253, 249, 0.97) 0%, rgba(245, 249, 241, 0.94) 100%);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
   box-shadow:
@@ -373,27 +393,28 @@ a {
 }
 
 .login-card-eyebrow {
-  color: rgba(71, 102, 49, 0.76);
+  color: rgba(76, 104, 58, 0.8);
   font-weight: 600;
-  letter-spacing: 0.12em;
+  font-size: 13px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .login-card-title {
   margin: 0 !important;
-  color: #24381f !important;
+  color: var(--tea-900) !important;
   font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
   font-size: 34px !important;
-  font-weight: 700 !important;
-  line-height: 1.18 !important;
-  letter-spacing: 0.01em;
+  font-weight: 720 !important;
+  line-height: 1.14 !important;
+  letter-spacing: 0.005em;
 }
 
 .login-card-subtitle {
-  color: rgba(72, 103, 50, 0.86);
-  font-size: 14px;
+  color: rgba(78, 107, 60, 0.82);
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .login-card--glass .ant-form-item-label > label {
@@ -429,15 +450,16 @@ a {
   height: 46px;
   border: none;
   border-radius: 16px;
-  background: linear-gradient(135deg, #295f1d 0%, #3d7d28 100%) !important;
-  box-shadow: 0 16px 30px rgba(32, 78, 23, 0.22);
+  background: linear-gradient(135deg, #315d28 0%, #4f7942 100%) !important;
+  box-shadow: 0 12px 24px rgba(44, 82, 36, 0.18);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
 .login-submit-button:hover,
 .login-submit-button:focus {
-  background: linear-gradient(135deg, #234f18 0%, #4c8a32 100%) !important;
+  background: linear-gradient(135deg, #2d5524 0%, #5a8650 100%) !important;
 }
 
 .login-footer-link {
@@ -494,9 +516,10 @@ a {
 
 .admin-hero-card,
 .admin-section-card {
-  border: 1px solid rgba(94, 113, 73, 0.12);
+  border: 1px solid var(--line-soft);
   border-radius: 28px !important;
-  background: linear-gradient(180deg, rgba(251, 248, 241, 0.96) 0%, rgba(247, 242, 231, 0.92) 100%);
+  background:
+    linear-gradient(180deg, rgba(252, 253, 249, 0.97) 0%, rgba(244, 248, 240, 0.94) 100%);
   box-shadow: 0 18px 40px rgba(30, 56, 24, 0.08);
 }
 
@@ -507,8 +530,8 @@ a {
 
 .admin-hero-card--section {
   background:
-    radial-gradient(circle at top right, rgba(220, 191, 115, 0.16), transparent 28%),
-    linear-gradient(180deg, rgba(251, 248, 241, 0.96) 0%, rgba(247, 242, 231, 0.92) 100%);
+    radial-gradient(circle at top right, rgba(184, 203, 166, 0.14), transparent 26%),
+    linear-gradient(180deg, rgba(252, 253, 249, 0.97) 0%, rgba(244, 248, 240, 0.94) 100%);
 }
 
 .admin-hero-badge {
@@ -516,25 +539,28 @@ a {
   margin-inline-end: 0;
   padding: 7px 14px;
   border-radius: 999px;
-  color: #5c7f45;
-  background: rgba(92, 127, 69, 0.12);
+  color: var(--tea-600);
+  background: rgba(126, 154, 106, 0.1);
   font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  letter-spacing: 0.1em;
 }
 
 .admin-hero-title {
   margin: 0 !important;
-  color: #24381f !important;
+  color: var(--tea-900) !important;
   font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
-  font-size: 36px !important;
-  line-height: 1.18 !important;
+  font-size: 34px !important;
+  font-weight: 720 !important;
+  line-height: 1.14 !important;
+  letter-spacing: 0.005em;
 }
 
 .admin-hero-description {
   margin: 0 !important;
-  color: rgba(43, 52, 38, 0.74) !important;
+  color: var(--text-secondary) !important;
   font-size: 16px;
-  line-height: 1.75;
+  line-height: 1.7;
 }
 
 .admin-hero-actions {
@@ -564,44 +590,45 @@ a {
 }
 
 .admin-stat-card--warning {
-  background: linear-gradient(180deg, rgba(255, 248, 230, 0.96) 0%, rgba(255, 242, 208, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(248, 251, 240, 0.96) 0%, rgba(241, 247, 232, 0.94) 100%);
 }
 
 .admin-stat-card--success {
-  background: linear-gradient(180deg, rgba(237, 250, 239, 0.96) 0%, rgba(226, 245, 230, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(242, 250, 243, 0.96) 0%, rgba(232, 245, 234, 0.94) 100%);
 }
 
 .admin-stat-card--danger {
-  background: linear-gradient(180deg, rgba(255, 241, 240, 0.96) 0%, rgba(255, 232, 230, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(251, 245, 242, 0.96) 0%, rgba(246, 237, 233, 0.94) 100%);
 }
 
 .admin-stat-card--primary {
-  background: linear-gradient(180deg, rgba(240, 247, 255, 0.96) 0%, rgba(229, 240, 255, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(243, 248, 251, 0.96) 0%, rgba(235, 242, 246, 0.94) 100%);
 }
 
 .admin-stat-card--neutral {
-  background: linear-gradient(180deg, rgba(251, 249, 244, 0.96) 0%, rgba(245, 240, 230, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(252, 253, 249, 0.96) 0%, rgba(244, 248, 240, 0.94) 100%);
 }
 
 .admin-stat-label {
   color: rgba(60, 79, 48, 0.72);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .admin-stat-value {
   margin: 10px 0 0 !important;
-  color: #24381f !important;
+  color: var(--tea-900) !important;
+  line-height: 1.05 !important;
 }
 
 .admin-card-link {
-  color: #2f6f1e;
+  color: var(--tea-700);
   font-weight: 600;
 }
 
 .admin-card-link:hover {
-  color: #1f5612;
+  color: var(--tea-800);
 }
 
 .admin-section-description {
@@ -734,8 +761,8 @@ a {
 
 .portal-hero-card {
   background:
-    radial-gradient(circle at top right, rgba(113, 159, 72, 0.14), transparent 26%),
-    linear-gradient(180deg, rgba(251, 248, 241, 0.96) 0%, rgba(247, 242, 231, 0.92) 100%);
+    radial-gradient(circle at top right, rgba(140, 171, 118, 0.12), transparent 26%),
+    linear-gradient(180deg, rgba(252, 253, 249, 0.97) 0%, rgba(244, 248, 240, 0.94) 100%);
 }
 
 .portal-action-grid {
@@ -750,13 +777,15 @@ a {
   align-items: center;
   padding: 14px 16px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.64);
-  border: 1px solid rgba(94, 113, 73, 0.1);
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid var(--line-soft);
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .portal-action-card:hover {
   border-color: rgba(63, 125, 35, 0.24);
   background: rgba(255, 255, 255, 0.82);
+  transform: translateY(-1px);
 }
 
 .portal-action-icon {
@@ -766,8 +795,8 @@ a {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: rgba(92, 127, 69, 0.1);
-  color: #365722;
+  background: rgba(126, 154, 106, 0.1);
+  color: var(--tea-700);
   font-size: 18px;
 }
 
@@ -775,8 +804,8 @@ a {
   margin-inline-end: 0;
   padding: 6px 12px;
   border-radius: 999px;
-  color: #47663a;
-  background: rgba(92, 127, 69, 0.1);
+  color: var(--tea-600);
+  background: rgba(126, 154, 106, 0.1);
 }
 
 .portal-quick-grid {
@@ -790,8 +819,14 @@ a {
   gap: 8px;
   padding: 16px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(94, 113, 73, 0.1);
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid var(--line-soft);
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.portal-quick-tile:hover {
+  transform: translateY(-1px);
+  border-color: rgba(63, 125, 35, 0.22);
 }
 
 .public-query-hero-card {
@@ -874,7 +909,7 @@ a {
 }
 
 .public-query-score-main span {
-  color: #5c7f45;
+  color: var(--tea-600);
   font-weight: 600;
 }
 
@@ -882,6 +917,25 @@ a {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.table-action-link {
+  padding-inline: 0 !important;
+}
+
+.table-action-link .ant-btn-icon {
+  margin-inline-end: 4px;
+}
+
+.ant-tag {
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.ant-tag:not(.ant-tag-has-color) {
+  color: var(--tea-700);
+  background: rgba(126, 154, 106, 0.08);
+  border-color: rgba(126, 154, 106, 0.14);
 }
 
 .trace-code-grid {

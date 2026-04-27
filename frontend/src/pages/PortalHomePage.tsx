@@ -177,13 +177,13 @@ export function PortalHomePage({
   const heroBadge = useMemo(() => {
     switch (role) {
       case 'farmer':
-        return 'Farmer Workspace'
+        return '茶农工作台'
       case 'enterprise':
-        return 'Enterprise Workspace'
+        return '企业工作台'
       case 'regulator':
-        return 'Regulatory Console'
+        return '监管工作台'
       default:
-        return 'Workspace Overview'
+        return '工作台总览'
     }
   }, [role])
 

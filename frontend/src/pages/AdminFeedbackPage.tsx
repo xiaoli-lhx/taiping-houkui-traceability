@@ -121,7 +121,7 @@ export function AdminFeedbackPage() {
       <Card bordered={false} className="admin-hero-card admin-hero-card--section">
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
           <Tag bordered={false} className="admin-hero-badge">
-            Feedback Workflow Desk
+            反馈处理工作台
           </Tag>
           <Typography.Title level={2} className="admin-hero-title">
             反馈处理

@@ -1,24 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Alert, Card, Col, Row, Space, Statistic, Table, Tag, Typography } from 'antd'
+import { Alert, Card, Col, Row, Space, Table, Tag, Typography } from 'antd'
+import { BarChartOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 
 import { hasAnyRole, withPortalPrefix } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
 import { EmptyState } from '../components/EmptyState'
-import {
-  GradeDistributionCard,
-  MetricTrendCard,
-  ProductionDistributionCard,
-} from '../components/charts'
+import { GradeDistributionCard, MetricTrendCard, ProductionDistributionCard } from '../components/charts'
 import { api } from '../lib/api'
 import { getRiskSeverityMeta } from '../lib/display'
-import type {
-  GradeDistributionItem,
-  MetricTrendItem,
-  OverviewStats,
-  ProductionDistributionItem,
-  RiskAlertItem,
-} from '../types'
+import type { GradeDistributionItem, MetricTrendItem, OverviewStats, ProductionDistributionItem, RiskAlertItem } from '../types'
 
 export function StatsPage() {
   const { token, user } = useAuth()
@@ -58,37 +49,65 @@ export function StatsPage() {
   }, [canViewRiskAlerts, token])
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Card>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          统计分析中心
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          当前页面对应开题报告中的数据统计分析模块，图表已接入真实后端接口数据。
-        </Typography.Text>
+    <Space direction="vertical" size={16} className="admin-page-stack">
+      <Card bordered={false} className="admin-hero-card portal-hero-card">
+        <Row gutter={[24, 24]} align="middle">
+          <Col xs={24} lg={15}>
+            <Space direction="vertical" size={12}>
+              <Tag bordered={false} className="admin-hero-badge">
+                数据分析中心
+              </Tag>
+              <Typography.Title level={2} className="admin-hero-title">
+                统计分析中心
+              </Typography.Title>
+              <Typography.Paragraph className="admin-hero-description">
+                面向企业与监管方展示批次总量、公开覆盖、品质分布、趋势变化与风险预警，形成可追踪的数据分析面板。
+              </Typography.Paragraph>
+            </Space>
+          </Col>
+          <Col xs={24} lg={9}>
+            <div className="portal-action-grid">
+              <Link to={withPortalPrefix(user, '/batches')} className="portal-action-card">
+                <div className="portal-action-icon">
+                  <BarChartOutlined />
+                </div>
+                <div>
+                  <Typography.Text strong>查看批次明细</Typography.Text>
+                  <div>
+                    <Typography.Text type="secondary">回到批次工作区核对基础数据</Typography.Text>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </Col>
+        </Row>
       </Card>
 
       {error ? <Alert showIcon type="error" message={error} /> : null}
 
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12} xl={6}>
-          <Card>
-            <Statistic title="批次总数" value={overview?.total_batches ?? 0} />
+          <Card bordered={false} className="admin-stat-card admin-stat-card--primary">
+            <Typography.Text className="admin-stat-label">批次总数</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">{overview?.total_batches ?? 0}</Typography.Title>
           </Card>
         </Col>
         <Col xs={24} md={12} xl={6}>
-          <Card>
-            <Statistic title="公开批次" value={overview?.public_batches ?? 0} />
+          <Card bordered={false} className="admin-stat-card admin-stat-card--success">
+            <Typography.Text className="admin-stat-label">公开批次</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">{overview?.public_batches ?? 0}</Typography.Title>
           </Card>
         </Col>
         <Col xs={24} md={12} xl={6}>
-          <Card>
-            <Statistic title="评估总数" value={overview?.total_evaluations ?? 0} />
+          <Card bordered={false} className="admin-stat-card admin-stat-card--warning">
+            <Typography.Text className="admin-stat-label">评估总数</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">{overview?.total_evaluations ?? 0}</Typography.Title>
           </Card>
         </Col>
         <Col xs={24} md={12} xl={6}>
-          <Card>
-            <Statistic title="平均得分" value={overview?.average_score ?? 0} precision={2} />
+          <Card bordered={false} className="admin-stat-card admin-stat-card--danger">
+            <Typography.Text className="admin-stat-label">平均得分</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">{overview?.average_score?.toFixed(2) ?? '0.00'}</Typography.Title>
           </Card>
         </Col>
       </Row>
@@ -98,7 +117,8 @@ export function StatsPage() {
           {production.length ? (
             <ProductionDistributionCard items={production} />
           ) : (
-            <Card title="产量分布图">
+            <Card bordered={false} className="admin-section-card">
+              <Typography.Title level={4} style={{ marginTop: 0 }}>产量分布图</Typography.Title>
               <EmptyState description="暂无产量分布数据" />
             </Card>
           )}
@@ -107,19 +127,27 @@ export function StatsPage() {
           {grades.length ? (
             <GradeDistributionCard items={grades} />
           ) : (
-            <Card title="品质等级占比图">
+            <Card bordered={false} className="admin-section-card">
+              <Typography.Title level={4} style={{ marginTop: 0 }}>品质等级占比图</Typography.Title>
               <EmptyState description="暂无等级占比数据" />
             </Card>
           )}
         </Col>
       </Row>
 
-      <Card>
+      <Card bordered={false} className="admin-section-card">
+        <Typography.Title level={4} style={{ marginTop: 0 }}>品质趋势分析</Typography.Title>
         {trends.length ? <MetricTrendCard items={trends} /> : <EmptyState description="暂无品质趋势数据" />}
       </Card>
 
       {canViewRiskAlerts ? (
-        <Card title="风险预警列表">
+        <Card bordered={false} className="admin-section-card admin-table-card">
+          <div className="admin-table-summary">
+            <div>
+              <Typography.Title level={4} style={{ margin: 0 }}>风险预警列表</Typography.Title>
+              <Typography.Text type="secondary">识别可能影响公开溯源可信度或品质判断的风险批次。</Typography.Text>
+            </div>
+          </div>
           <Table<RiskAlertItem>
             rowKey={(record) => `${record.type}-${record.batch_id}-${record.metric_value}`}
             pagination={{ pageSize: 6 }}
@@ -154,7 +182,8 @@ export function StatsPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={12}>
-          <Card title="产量分布明细表">
+          <Card bordered={false} className="admin-section-card admin-table-card">
+            <Typography.Title level={4} style={{ marginTop: 0 }}>产量分布明细表</Typography.Title>
             <Table
               rowKey="origin"
               pagination={false}
@@ -169,7 +198,8 @@ export function StatsPage() {
           </Card>
         </Col>
         <Col xs={24} xl={12}>
-          <Card title="品质等级明细表">
+          <Card bordered={false} className="admin-section-card admin-table-card">
+            <Typography.Title level={4} style={{ marginTop: 0 }}>品质等级明细表</Typography.Title>
             <Table
               rowKey="grade"
               pagination={false}
