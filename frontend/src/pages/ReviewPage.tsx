@@ -22,6 +22,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 
 import { getRoleLabel, withPortalPrefix } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
+import { AttachmentPanel } from '../components/AttachmentPanel'
 import { EmptyState } from '../components/EmptyState'
 import { api } from '../lib/api'
 import { formatDateTime, getAuditStatusMeta, getBatchStatusMeta, getRectificationStatusMeta } from '../lib/display'
@@ -46,8 +47,10 @@ export function ReviewPage() {
   const [audits, setAudits] = useState<AuditRecord[]>([])
   const [rectifications, setRectifications] = useState<RectificationTask[]>([])
   const [selectedRectification, setSelectedRectification] = useState<RectificationTask | null>(null)
+  const [selectedAudit, setSelectedAudit] = useState<AuditRecord | null>(null)
   const [auditDrawerOpen, setAuditDrawerOpen] = useState(false)
   const [rectificationDrawerOpen, setRectificationDrawerOpen] = useState(false)
+  const [auditAttachmentDrawerOpen, setAuditAttachmentDrawerOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -336,6 +339,22 @@ export function ReviewPage() {
                               },
                               { title: '意见', dataIndex: 'comment', key: 'comment', render: (value: string) => value || '-' },
                               { title: '时间', dataIndex: 'reviewed_at', key: 'reviewed_at', render: formatDateTime },
+                              {
+                                title: '附件',
+                                key: 'attachment',
+                                render: (_: unknown, record: AuditRecord) => (
+                                  <Button
+                                    size="small"
+                                    ghost
+                                    onClick={() => {
+                                      setSelectedAudit(record)
+                                      setAuditAttachmentDrawerOpen(true)
+                                    }}
+                                  >
+                                    查看附件
+                                  </Button>
+                                ),
+                              },
                             ]}
                           />
                         </Card>
@@ -486,8 +505,32 @@ export function ReviewPage() {
                 </Button>
               </Space>
             </Form>
+            <AttachmentPanel
+              bizType="rectification_task"
+              bizId={selectedRectification.id}
+              title="整改附件"
+              canManage={false}
+            />
           </Space>
         ) : null}
+      </Drawer>
+
+      <Drawer
+        title="审核附件"
+        width={640}
+        open={auditAttachmentDrawerOpen}
+        onClose={() => {
+          setAuditAttachmentDrawerOpen(false)
+          setSelectedAudit(null)
+        }}
+        destroyOnClose
+      >
+        <AttachmentPanel
+          bizType="audit_record"
+          bizId={selectedAudit?.id}
+          title="审核记录附件"
+          canManage
+        />
       </Drawer>
     </Space>
   )

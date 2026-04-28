@@ -12,6 +12,7 @@ export interface AuthContextValue extends AuthState {
   login: (username: string, password: string, role: AppRole) => Promise<LoginResponse>
   logout: () => void
   refreshMe: () => Promise<void>
+  setSession: (token: string, user: UserProfile) => void
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

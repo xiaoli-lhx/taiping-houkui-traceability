@@ -18,7 +18,9 @@ func New(cfg config.Config, services *service.Container) *gin.Engine {
 
 	authHandler := handler.NewAuthHandler(services.Auth)
 	adminHandler := handler.NewAdminHandler(services.Admin)
+	attachmentHandler := handler.NewAttachmentHandler(services.Attachment)
 	consumerHandler := handler.NewConsumerHandler(services.Consumer)
+	notificationHandler := handler.NewNotificationHandler(services.Notification)
 	traceHandler := handler.NewTraceHandler(services.Trace)
 	qualityHandler := handler.NewQualityHandler(services.Quality)
 	statsHandler := handler.NewStatisticsHandler(services.Stats)
@@ -30,6 +32,7 @@ func New(cfg config.Config, services *service.Container) *gin.Engine {
 			"status": "ok",
 		})
 	})
+	engine.Static("/uploads", service.UploadRootDir)
 
 	api := engine.Group("/api/v1")
 
@@ -41,6 +44,12 @@ func New(cfg config.Config, services *service.Container) *gin.Engine {
 	protected := api.Group("")
 	protected.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	protected.GET("/auth/me", authHandler.Me)
+	protected.PUT("/auth/profile", authHandler.UpdateProfile)
+	protected.POST("/auth/change-password", authHandler.ChangePassword)
+	protected.GET("/notifications", notificationHandler.List)
+	protected.POST("/notifications/:id/read", notificationHandler.MarkRead)
+	protected.POST("/notifications/read-all", notificationHandler.MarkAllRead)
+	protected.GET("/dashboard/todos", notificationHandler.Todos)
 
 	adminGroup := protected.Group("/admin")
 	adminGroup.Use(middleware.RequireRoles(model.RoleAdmin))
@@ -54,6 +63,7 @@ func New(cfg config.Config, services *service.Container) *gin.Engine {
 	adminGroup.POST("/registrations/:id/reject", adminHandler.RejectRegistration)
 	adminGroup.GET("/feedback", adminHandler.ListFeedback)
 	adminGroup.POST("/feedback/:id/process", adminHandler.ProcessFeedback)
+	adminGroup.GET("/logs", adminHandler.ListLogs)
 
 	consumerGroup := protected.Group("/consumer")
 	consumerGroup.Use(middleware.RequireRoles(model.RoleConsumer))
@@ -88,6 +98,11 @@ func New(cfg config.Config, services *service.Container) *gin.Engine {
 	traceReviewGroup.Use(middleware.RequireRoles(model.RoleRegulator))
 	traceReviewGroup.POST("/batches/:id/audits", traceHandler.CreateAudit)
 	traceReviewGroup.POST("/rectifications/:id/review", traceHandler.ReviewRectification)
+
+	attachmentGroup := protected.Group("/attachments")
+	attachmentGroup.GET("", attachmentHandler.List)
+	attachmentGroup.POST("", attachmentHandler.Create)
+	attachmentGroup.DELETE("/:id", attachmentHandler.Delete)
 
 	qualityGroup := protected.Group("/quality")
 	qualityGroup.POST("/evaluations", middleware.RequireRoles(model.RoleEnterprise, model.RoleRegulator), qualityHandler.CreateEvaluation)

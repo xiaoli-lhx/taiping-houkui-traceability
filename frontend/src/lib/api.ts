@@ -1,5 +1,6 @@
 import type {
   AdminUserActionResult,
+  AttachmentItem,
   ApiEnvelope,
   AppRole,
   AuditCreateRequest,
@@ -10,8 +11,12 @@ import type {
   GradeDistributionItem,
   LoginResponse,
   MetricTrendItem,
+  NotificationListResult,
+  NotificationItem,
   OverviewStats,
+  OperationLogListResult,
   PaginationResult,
+  ProfileUpdateResponse,
   ProductionDistributionItem,
   PublicTraceView,
   QualityEvaluationView,
@@ -20,15 +25,29 @@ import type {
   RegistrationStatusResponse,
   RiskAlertItem,
   TeaBatch,
+  TodoSummary,
   TraceStageRecord,
   UserProfile,
 } from '../types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8080/api/v1'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8080/api/v1'
+export const API_ORIGIN = new URL(API_BASE_URL).origin
+
+export function resolveFileUrl(path?: string) {
+  if (!path) {
+    return ''
+  }
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path
+  }
+  return new URL(path, API_ORIGIN).toString()
+}
 
 async function request<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
   const headers = new Headers(init.headers ?? {})
-  headers.set('Content-Type', 'application/json')
+  if (!(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
   if (token) {
     headers.set('Authorization', `Bearer ${token}`)
   }
@@ -66,6 +85,35 @@ export const api = {
   },
   getMe(token: string) {
     return request<UserProfile>('/auth/me', { method: 'GET' }, token)
+  },
+  updateProfile(token: string, body: FormData) {
+    return request<ProfileUpdateResponse>('/auth/profile', { method: 'PUT', body }, token)
+  },
+  changePassword(token: string, body: { old_password: string; new_password: string; confirm_password: string }) {
+    return request<{ changed: boolean }>('/auth/change-password', { method: 'POST', body: JSON.stringify(body) }, token)
+  },
+  getNotifications(token: string, options: { isRead?: boolean; page?: number; pageSize?: number } = {}) {
+    const search = new URLSearchParams()
+    if (typeof options.isRead === 'boolean') {
+      search.set('is_read', String(options.isRead))
+    }
+    if (options.page) {
+      search.set('page', String(options.page))
+    }
+    if (options.pageSize) {
+      search.set('page_size', String(options.pageSize))
+    }
+    const query = search.toString()
+    return request<NotificationListResult>(`/notifications${query ? `?${query}` : ''}`, { method: 'GET' }, token)
+  },
+  markNotificationRead(token: string, id: number) {
+    return request<NotificationItem>(`/notifications/${id}/read`, { method: 'POST', body: JSON.stringify({}) }, token)
+  },
+  markAllNotificationsRead(token: string) {
+    return request<{ read_all: boolean }>('/notifications/read-all', { method: 'POST', body: JSON.stringify({}) }, token)
+  },
+  getTodos(token: string) {
+    return request<TodoSummary>('/dashboard/todos', { method: 'GET' }, token)
   },
   getAdminUsers(token: string, options: { keyword?: string; role?: string; approval_status?: string } = {}) {
     const search = new URLSearchParams()
@@ -112,6 +160,25 @@ export const api = {
   },
   processFeedback(token: string, id: number, body: { status: string; process_note: string }) {
     return request<FeedbackTicket>(`/admin/feedback/${id}/process`, { method: 'POST', body: JSON.stringify(body) }, token)
+  },
+  getAdminLogs(token: string, options: { actorId?: number; action?: string; targetType?: string; page?: number; pageSize?: number } = {}) {
+    const search = new URLSearchParams()
+    if (options.actorId) {
+      search.set('actor_id', String(options.actorId))
+    }
+    if (options.action?.trim()) {
+      search.set('action', options.action.trim())
+    }
+    if (options.targetType?.trim()) {
+      search.set('target_type', options.targetType.trim())
+    }
+    if (options.page) {
+      search.set('page', String(options.page))
+    }
+    if (options.pageSize) {
+      search.set('page_size', String(options.pageSize))
+    }
+    return request<OperationLogListResult>(`/admin/logs?${search.toString()}`, { method: 'GET' }, token)
   },
   getBatches(
     token: string,
@@ -195,6 +262,19 @@ export const api = {
   },
   reviewRectification(token: string, id: number, body: { status: string; reviewer_comment: string }) {
     return request<RectificationTask>(`/trace/rectifications/${id}/review`, { method: 'POST', body: JSON.stringify(body) }, token)
+  },
+  getAttachments(token: string, bizType: string, bizId: number) {
+    return request<AttachmentItem[]>(
+      `/attachments?biz_type=${encodeURIComponent(bizType)}&biz_id=${encodeURIComponent(String(bizId))}`,
+      { method: 'GET' },
+      token,
+    )
+  },
+  uploadAttachment(token: string, body: FormData) {
+    return request<AttachmentItem>('/attachments', { method: 'POST', body }, token)
+  },
+  deleteAttachment(token: string, id: number) {
+    return request<{ deleted: boolean }>(`/attachments/${id}`, { method: 'DELETE' }, token)
   },
   createFavorite(token: string, batchId: number) {
     return request<ConsumerFavorite>('/consumer/favorites', { method: 'POST', body: JSON.stringify({ batch_id: batchId }) }, token)

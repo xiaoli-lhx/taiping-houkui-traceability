@@ -111,7 +111,27 @@ func (s *ConsumerService) CreateFeedback(input CreateFeedbackInput) (*model.User
 		ContactInfo: strings.TrimSpace(input.ContactInfo),
 		Status:      model.FeedbackStatusPending,
 	}
-	if err := s.db.Create(&feedback).Error; err != nil {
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&feedback).Error; err != nil {
+			return err
+		}
+
+		var admins []model.User
+		if err := tx.Where("role_code = ? AND status = ?", model.RoleAdmin, model.UserStatusActive).Find(&admins).Error; err != nil {
+			return err
+		}
+		notifications := make([]NotificationCreateInput, 0, len(admins))
+		for _, admin := range admins {
+			notifications = append(notifications, NotificationCreateInput{
+				UserID:   admin.ID,
+				Category: model.NotificationCategoryFeedbackTicket,
+				Title:    "收到新的反馈工单",
+				Content:  "有新的消费者反馈待处理，请及时查看。",
+				Link:     NotificationLinkAdminFeedback,
+			})
+		}
+		return createNotificationsTx(tx, notifications)
+	}); err != nil {
 		return nil, err
 	}
 	return &feedback, nil

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowRightOutlined, AuditOutlined, MessageOutlined, ReloadOutlined, TeamOutlined } from '@ant-design/icons'
+import { ArrowRightOutlined, AuditOutlined, BellOutlined, MessageOutlined, ReloadOutlined, TeamOutlined, ToolOutlined } from '@ant-design/icons'
 import { Alert, Button, Card, Col, Row, Space, Spin, Tag, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 
@@ -9,8 +9,8 @@ import type { AdminRegistrationStatus } from '../lib/admin'
 import { adminRegistrationStatusOptions } from '../lib/admin'
 import { EmptyState } from '../components/EmptyState'
 import { api } from '../lib/api'
-import { getAuditStatusMeta } from '../lib/display'
-import type { UserProfile } from '../types'
+import { formatDateTime, getAuditStatusMeta, getNotificationCategoryLabel } from '../lib/display'
+import type { NotificationItem, UserProfile } from '../types'
 
 type RegistrationCounts = Record<AdminRegistrationStatus, number>
 
@@ -28,18 +28,22 @@ export function AdminHomePage() {
   const [counts, setCounts] = useState<RegistrationCounts>(defaultCounts)
   const [totalUsers, setTotalUsers] = useState(0)
   const [pendingFeedbackCount, setPendingFeedbackCount] = useState(0)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [pendingItems, setPendingItems] = useState<UserProfile[]>([])
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
 
   const loadDashboard = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const [pending, approved, rejected, users, feedback] = await Promise.all([
+      const [pending, approved, rejected, users, feedback, todos, notificationResult] = await Promise.all([
         api.getAdminRegistrations(token, 'pending'),
         api.getAdminRegistrations(token, 'approved'),
         api.getAdminRegistrations(token, 'rejected'),
         api.getAdminUsers(token),
         api.getAdminFeedback(token),
+        api.getTodos(token),
+        api.getNotifications(token, { isRead: false, pageSize: 5 }),
       ])
 
       setCounts({
@@ -51,6 +55,8 @@ export function AdminHomePage() {
       setPendingItems(pending.slice(0, 6))
       setTotalUsers(users.length)
       setPendingFeedbackCount(feedback.filter((item) => item.status !== 'resolved').length)
+      setUnreadNotificationCount(todos.items.find((item) => item.key === 'unread_notifications')?.count ?? 0)
+      setNotifications(notificationResult.items)
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : '加载管理员工作台失败')
     } finally {
@@ -69,8 +75,9 @@ export function AdminHomePage() {
       { label: '已驳回申请', value: counts.rejected, tone: 'danger' },
       { label: '当前用户总数', value: totalUsers, tone: 'primary' },
       { label: '待处理反馈', value: pendingFeedbackCount, tone: 'neutral' },
+      { label: '未读通知', value: unreadNotificationCount, tone: 'warning' },
     ],
-    [counts, pendingFeedbackCount, totalUsers],
+    [counts, pendingFeedbackCount, totalUsers, unreadNotificationCount],
   )
 
   return (
@@ -105,6 +112,16 @@ export function AdminHomePage() {
               <Link to="/admin/feedback">
                 <Button size="large" icon={<MessageOutlined />}>
                   处理反馈工单
+                </Button>
+              </Link>
+              <Link to="/admin/logs">
+                <Button size="large" icon={<ToolOutlined />}>
+                  查看操作日志
+                </Button>
+              </Link>
+              <Link to="/notifications">
+                <Button size="large" icon={<BellOutlined />}>
+                  通知中心
                 </Button>
               </Link>
               <Button size="large" icon={<ReloadOutlined />} onClick={() => void loadDashboard()}>
@@ -195,6 +212,43 @@ export function AdminHomePage() {
             </div>
           ))}
         </div>
+      </Card>
+
+      <Card
+        bordered={false}
+        className="admin-section-card"
+        title="最近通知"
+        extra={
+          <Link to="/notifications" className="admin-card-link">
+            查看全部 <ArrowRightOutlined />
+          </Link>
+        }
+      >
+        {loading ? (
+          <div className="admin-inline-loading">
+            <Spin />
+          </div>
+        ) : notifications.length ? (
+          <div className="admin-preview-list">
+            {notifications.map((item) => (
+              <div key={item.id} className="admin-preview-item">
+                <div className="admin-preview-main">
+                  <Space size={8} wrap>
+                    <Typography.Text strong>{item.title}</Typography.Text>
+                    <Tag>{getNotificationCategoryLabel(item.category)}</Tag>
+                  </Space>
+                  <Typography.Text>{item.content}</Typography.Text>
+                  <Typography.Text type="secondary">{formatDateTime(item.created_at)}</Typography.Text>
+                </div>
+                <Link to={item.link || '/notifications'} className="admin-card-link">
+                  查看 <ArrowRightOutlined />
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState description="当前没有未读通知" />
+        )}
       </Card>
     </Space>
   )

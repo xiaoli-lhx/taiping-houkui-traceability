@@ -37,6 +37,12 @@ type registrationStatusRequest struct {
 	Username string `form:"username"`
 }
 
+type changePasswordRequest struct {
+	OldPassword     string `json:"old_password"`
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
+}
+
 func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
@@ -137,4 +143,66 @@ func (h *AuthHandler) RegistrationStatus(c *gin.Context) {
 		"approval_status":  user.ApprovalStatus,
 		"rejection_reason": user.RejectionReason,
 	})
+}
+
+func (h *AuthHandler) UpdateProfile(c *gin.Context) {
+	current := middleware.GetCurrentUser(c)
+
+	input := service.UpdateProfileInput{
+		UserID:      current.ID,
+		DisplayName: c.PostForm("display_name"),
+		Phone:       c.PostForm("phone"),
+		ContactInfo: c.PostForm("contact_info"),
+	}
+
+	file, err := c.FormFile("avatar")
+	if err == nil {
+		input.AvatarFile = file
+	}
+
+	result, err := h.authService.UpdateProfile(input)
+	if err != nil {
+		if errors.Is(err, service.ErrDisplayNameRequired) {
+			responsex.Fail(c, http.StatusBadRequest, err.Error())
+			return
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			responsex.Fail(c, http.StatusNotFound, "用户不存在")
+			return
+		}
+		responsex.Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	responsex.Success(c, result)
+}
+
+func (h *AuthHandler) ChangePassword(c *gin.Context) {
+	current := middleware.GetCurrentUser(c)
+
+	var request changePasswordRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		responsex.Fail(c, http.StatusBadRequest, "修改密码参数格式错误")
+		return
+	}
+
+	if err := h.authService.ChangePassword(service.ChangePasswordInput{
+		UserID:          current.ID,
+		OldPassword:     request.OldPassword,
+		NewPassword:     request.NewPassword,
+		ConfirmPassword: request.ConfirmPassword,
+	}); err != nil {
+		if errors.Is(err, service.ErrInvalidOldPassword) || errors.Is(err, service.ErrPasswordMismatch) {
+			responsex.Fail(c, http.StatusBadRequest, err.Error())
+			return
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			responsex.Fail(c, http.StatusNotFound, "用户不存在")
+			return
+		}
+		responsex.Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	responsex.Success(c, gin.H{"changed": true})
 }

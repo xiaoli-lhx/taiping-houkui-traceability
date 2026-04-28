@@ -56,6 +56,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           user,
         }))
       },
+      setSession(token: string, user: LoginResponse['user']) {
+        setState({ token, user })
+      },
     }),
     [state],
   )

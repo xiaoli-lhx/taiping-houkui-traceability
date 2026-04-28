@@ -136,7 +136,7 @@ func (h *AdminHandler) EnableUser(c *gin.Context) {
 		return
 	}
 
-	user, err := h.adminService.EnableUser(userID)
+	user, err := h.adminService.EnableUser(userID, currentOperator(c).UserID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			responsex.Fail(c, http.StatusNotFound, "用户不存在")
@@ -180,7 +180,7 @@ func (h *AdminHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	user, err := h.adminService.ResetPassword(userID)
+	user, err := h.adminService.ResetPassword(userID, currentOperator(c).UserID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			responsex.Fail(c, http.StatusNotFound, "用户不存在")
@@ -236,4 +236,30 @@ func (h *AdminHandler) ProcessFeedback(c *gin.Context) {
 	}
 
 	responsex.Success(c, item)
+}
+
+func (h *AdminHandler) ListLogs(c *gin.Context) {
+	var actorID *uint
+	if raw := c.Query("actor_id"); raw != "" {
+		parsed, err := parseUintQuery(raw)
+		if err != nil {
+			responsex.Fail(c, http.StatusBadRequest, "actor_id 格式错误")
+			return
+		}
+		actorID = &parsed
+	}
+
+	result, err := h.adminService.ListOperationLogs(service.OperationLogFilter{
+		ActorID:    actorID,
+		Action:     c.Query("action"),
+		TargetType: c.Query("target_type"),
+		Page:       parseIntDefault(c.Query("page"), 1),
+		PageSize:   parseIntDefault(c.Query("page_size"), 10),
+	})
+	if err != nil {
+		responsex.Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	responsex.Success(c, result)
 }

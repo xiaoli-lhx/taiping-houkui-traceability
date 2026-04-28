@@ -99,7 +99,10 @@ func SeedDemoData(db *gorm.DB, qualityService *QualityService) error {
 		}
 	}
 
-	return seedDemoFeedback(db, users)
+	if err := seedDemoFeedback(db, users); err != nil {
+		return err
+	}
+	return seedDemoPlatformData(db, users)
 }
 
 func seedRoles(db *gorm.DB) error {
@@ -420,4 +423,91 @@ func seedDemoFeedback(db *gorm.DB, users map[string]model.User) error {
 	}
 
 	return db.Create(&feedbacks).Error
+}
+
+func seedDemoPlatformData(db *gorm.DB, users map[string]model.User) error {
+	var notificationCount int64
+	if err := db.Model(&model.Notification{}).Count(&notificationCount).Error; err != nil {
+		return err
+	}
+	if notificationCount == 0 {
+		now := time.Now()
+		readAt := now.Add(-2 * time.Hour)
+		notifications := []model.Notification{
+			{
+				UserID:    users["admin_demo"].ID,
+				Category:  model.NotificationCategoryFeedbackTicket,
+				Title:     "收到新的反馈工单",
+				Content:   "有新的消费者反馈待处理，请及时查看。",
+				Link:      "/admin/feedback",
+				IsRead:    false,
+				CreatedAt: now.Add(-3 * time.Hour),
+			},
+			{
+				UserID:    users["enterprise_demo"].ID,
+				Category:  model.NotificationCategoryRectificationTask,
+				Title:     "收到新的整改任务",
+				Content:   "批次 HK202603-002 被驳回，请补充整改说明后重新提交。",
+				Link:      "/enterprise/rectifications",
+				IsRead:    false,
+				CreatedAt: now.Add(-2 * time.Hour),
+			},
+			{
+				UserID:    users["regulator_demo"].ID,
+				Category:  model.NotificationCategoryRectificationReview,
+				Title:     "有新的整改任务待复审",
+				Content:   "批次 HK202603-002 的整改说明已提交，请尽快复审。",
+				Link:      "/regulator/reviews",
+				IsRead:    false,
+				CreatedAt: now.Add(-90 * time.Minute),
+			},
+			{
+				UserID:    users["consumer_demo"].ID,
+				Category:  model.NotificationCategoryFeedbackTicket,
+				Title:     "反馈工单状态已更新",
+				Content:   "你的反馈工单当前状态为：处理中。",
+				Link:      "/consumer/feedback",
+				IsRead:    true,
+				CreatedAt: now.Add(-4 * time.Hour),
+				ReadAt:    &readAt,
+			},
+		}
+		if err := db.Create(&notifications).Error; err != nil {
+			return err
+		}
+	}
+
+	var logCount int64
+	if err := db.Model(&model.OperationLog{}).Count(&logCount).Error; err != nil {
+		return err
+	}
+	if logCount == 0 {
+		logs := []model.OperationLog{
+			{
+				ActorID:    users["admin_demo"].ID,
+				ActorRole:  model.RoleAdmin,
+				Action:     "process_feedback",
+				TargetType: model.LogTargetFeedbackTicket,
+				TargetID:   1,
+				Summary:    "管理员更新了反馈工单状态",
+				DetailJSON: `{"status":"processing"}`,
+				CreatedAt:  time.Now().Add(-3 * time.Hour),
+			},
+			{
+				ActorID:    users["regulator_demo"].ID,
+				ActorRole:  model.RoleRegulator,
+				Action:     "create_audit",
+				TargetType: model.LogTargetAuditRecord,
+				TargetID:   1,
+				Summary:    "监管方提交了审核记录",
+				DetailJSON: `{"status":"rejected","batch_id":2}`,
+				CreatedAt:  time.Now().Add(-2 * time.Hour),
+			},
+		}
+		if err := db.Create(&logs).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

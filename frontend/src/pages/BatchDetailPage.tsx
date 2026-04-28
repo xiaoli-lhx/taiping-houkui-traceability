@@ -23,6 +23,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import { hasRole, withPortalPrefix } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
+import { AttachmentPanel } from '../components/AttachmentPanel'
 import { EmptyState } from '../components/EmptyState'
 import { api } from '../lib/api'
 import { formatDateTime, getAuditStatusMeta, getBatchStatusMeta, getRectificationStatusMeta, getStageLabel } from '../lib/display'
@@ -94,6 +95,9 @@ export function BatchDetailPage() {
 
   const latestEvaluation = batch?.quality_evaluations?.[0]
   const canEditStage = hasRole(user, 'enterprise') || hasRole(user, 'farmer')
+  const canManageStageAttachment = (stage: string) =>
+    (hasRole(user, 'farmer') && (stage === 'planting' || stage === 'picking')) ||
+    (hasRole(user, 'enterprise') && (stage === 'processing' || stage === 'packaging' || stage === 'distribution'))
   const canCreateQuality = hasRole(user, 'enterprise') || hasRole(user, 'regulator')
   const canReview = hasRole(user, 'regulator')
   const backPath = hasRole(user, 'admin')
@@ -266,6 +270,14 @@ export function BatchDetailPage() {
                       <Typography.Text type="secondary">
                         {record.location} · {record.operator_name} · {formatDateTime(record.occurred_at)}
                       </Typography.Text>
+                      <div style={{ marginTop: 12 }}>
+                        <AttachmentPanel
+                          bizType="trace_stage"
+                          bizId={record.id}
+                          title="阶段附件"
+                          canManage={canManageStageAttachment(record.stage)}
+                        />
+                      </div>
                     </div>
                   ),
                 }))}

@@ -10,6 +10,7 @@ export interface UserProfile {
   id: number
   username: string
   display_name: string
+  avatar_url: string
   phone: string
   organization: string
   contact_info: string
@@ -28,6 +29,12 @@ export interface AdminUserActionResult {
 }
 
 export interface LoginResponse {
+  access_token: string
+  expires_at: string
+  user: UserProfile
+}
+
+export interface ProfileUpdateResponse {
   access_token: string
   expires_at: string
   user: UserProfile
@@ -272,4 +279,71 @@ export interface RiskAlertItem {
   trace_code: string
   message: string
   metric_value: number
+}
+
+export interface AttachmentItem {
+  id: number
+  biz_type: string
+  biz_id: number
+  file_name: string
+  stored_name: string
+  relative_path: string
+  mime_type: string
+  file_size: number
+  uploaded_by: number
+  created_at: string
+}
+
+export interface NotificationItem {
+  id: number
+  user_id: number
+  category: string
+  title: string
+  content: string
+  link: string
+  is_read: boolean
+  created_at: string
+  read_at?: string
+}
+
+export interface NotificationListResult {
+  items: NotificationItem[]
+  pagination: {
+    page: number
+    page_size: number
+    total: number
+  }
+}
+
+export interface TodoSummaryItem {
+  key: string
+  label: string
+  count: number
+}
+
+export interface TodoSummary {
+  items: TodoSummaryItem[]
+}
+
+export interface OperationLogItem {
+  id: number
+  actor_id: number
+  actor_role: string
+  actor_username: string
+  actor_display_name: string
+  action: string
+  target_type: string
+  target_id: number
+  summary: string
+  detail_json: string
+  created_at: string
+}
+
+export interface OperationLogListResult {
+  items: OperationLogItem[]
+  pagination: {
+    page: number
+    page_size: number
+    total: number
+  }
 }

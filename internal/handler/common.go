@@ -51,6 +51,14 @@ func parseIntDefault(value string, defaultValue int) int {
 	return parsed
 }
 
+func parseUintQuery(value string) (uint, error) {
+	parsed, err := strconv.ParseUint(strings.TrimSpace(value), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return uint(parsed), nil
+}
+
 func currentOperator(c *gin.Context) service.OperatorContext {
 	current := middleware.GetCurrentUser(c)
 	return service.OperatorContext{

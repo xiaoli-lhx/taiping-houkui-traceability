@@ -5,6 +5,7 @@ import {
   HomeOutlined,
   LogoutOutlined,
   MessageOutlined,
+  NotificationOutlined,
   SearchOutlined,
   SettingOutlined,
   StarOutlined,
@@ -19,6 +20,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import { getPortalPrefix, getRoleLabel, hasRole } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
+import { resolveFileUrl } from '../lib/api'
 import { getAuditStatusMeta } from '../lib/display'
 
 export function AppShell() {
@@ -34,6 +36,8 @@ export function AppShell() {
         { key: '/admin/registrations', icon: <AuditOutlined />, label: '注册审核' },
         { key: '/admin/users', icon: <TeamOutlined />, label: '用户管理' },
         { key: '/admin/feedback', icon: <MessageOutlined />, label: '反馈处理' },
+        { key: '/admin/logs', icon: <ToolOutlined />, label: '操作日志' },
+        { key: '/notifications', icon: <NotificationOutlined />, label: '通知中心' },
         { key: '/profile', icon: <SettingOutlined />, label: '个人中心' },
       ]
     }
@@ -44,6 +48,7 @@ export function AppShell() {
         { key: '/enterprise/rectifications', icon: <ToolOutlined />, label: '整改任务' },
         { key: '/enterprise/quality/new', icon: <TrophyOutlined />, label: '品质评估' },
         { key: '/enterprise/stats', icon: <BarChartOutlined />, label: '统计分析' },
+        { key: '/notifications', icon: <NotificationOutlined />, label: '通知中心' },
         { key: '/profile', icon: <SettingOutlined />, label: '个人中心' },
       ]
     }
@@ -52,6 +57,7 @@ export function AppShell() {
         { key: '/farmer', icon: <HomeOutlined />, label: '茶农首页' },
         { key: '/farmer/batches', icon: <TagsOutlined />, label: '我的批次' },
         { key: '/farmer/rectifications', icon: <ToolOutlined />, label: '整改任务' },
+        { key: '/notifications', icon: <NotificationOutlined />, label: '通知中心' },
         { key: '/profile', icon: <SettingOutlined />, label: '个人中心' },
       ]
     }
@@ -60,6 +66,7 @@ export function AppShell() {
         { key: '/regulator', icon: <HomeOutlined />, label: '监管首页' },
         { key: '/regulator/reviews', icon: <AuditOutlined />, label: '批次审核' },
         { key: '/regulator/stats', icon: <BarChartOutlined />, label: '统计分析' },
+        { key: '/notifications', icon: <NotificationOutlined />, label: '通知中心' },
         { key: '/profile', icon: <SettingOutlined />, label: '个人中心' },
       ]
     }
@@ -69,6 +76,7 @@ export function AppShell() {
         { key: '/consumer/query', icon: <SearchOutlined />, label: '查询中心' },
         { key: '/consumer/favorites', icon: <StarOutlined />, label: '我的收藏' },
         { key: '/consumer/feedback', icon: <AuditOutlined />, label: '意见反馈' },
+        { key: '/notifications', icon: <NotificationOutlined />, label: '通知中心' },
         { key: '/profile', icon: <SettingOutlined />, label: '个人中心' },
       ]
     }
@@ -108,7 +116,7 @@ export function AppShell() {
         <div className="sider-footer">
           <Space direction="vertical" size={10} style={{ width: '100%' }}>
             <Space align="start">
-              <Avatar icon={<UserOutlined />} />
+              <Avatar src={resolveFileUrl(user?.avatar_url)} icon={<UserOutlined />} />
               <div>
                 <Typography.Text strong>{user?.display_name ?? '未登录'}</Typography.Text>
                 <div>

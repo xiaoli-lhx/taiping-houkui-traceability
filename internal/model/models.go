@@ -34,6 +34,23 @@ const (
 	FeedbackStatusProcessing = "processing"
 	FeedbackStatusResolved   = "resolved"
 
+	AttachmentBizTraceStage        = "trace_stage"
+	AttachmentBizAuditRecord       = "audit_record"
+	AttachmentBizRectificationTask = "rectification_task"
+
+	NotificationCategoryRegistrationReview  = "registration_review"
+	NotificationCategoryFeedbackTicket      = "feedback_ticket"
+	NotificationCategoryRectificationTask   = "rectification_task"
+	NotificationCategoryRectificationReview = "rectification_review"
+	NotificationCategorySystemNotice        = "system_notice"
+
+	LogTargetUserProfile       = "user_profile"
+	LogTargetUserAccount       = "user_account"
+	LogTargetAuditRecord       = "audit_record"
+	LogTargetRectificationTask = "rectification_task"
+	LogTargetFeedbackTicket    = "feedback_ticket"
+	LogTargetAttachment        = "attachment"
+
 	StagePlanting     = "planting"
 	StagePicking      = "picking"
 	StageProcessing   = "processing"
@@ -46,6 +63,7 @@ type User struct {
 	Username        string     `gorm:"size:64;uniqueIndex;not null" json:"username"`
 	PasswordHash    string     `gorm:"size:255;not null" json:"-"`
 	DisplayName     string     `gorm:"size:128;not null" json:"display_name"`
+	AvatarURL       string     `gorm:"size:255" json:"avatar_url"`
 	Phone           string     `gorm:"size:32" json:"phone"`
 	Organization    string     `gorm:"size:128" json:"organization"`
 	ContactInfo     string     `gorm:"size:255" json:"contact_info"`
@@ -214,4 +232,41 @@ type ConsumerQueryHistory struct {
 	QueriedAt   time.Time `gorm:"index" json:"queried_at"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type Attachment struct {
+	ID           uint      `gorm:"primaryKey" json:"id"`
+	BizType      string    `gorm:"size:64;index;not null" json:"biz_type"`
+	BizID        uint      `gorm:"index;not null" json:"biz_id"`
+	FileName     string    `gorm:"size:255;not null" json:"file_name"`
+	StoredName   string    `gorm:"size:255;not null" json:"stored_name"`
+	RelativePath string    `gorm:"size:255;not null" json:"relative_path"`
+	MimeType     string    `gorm:"size:128" json:"mime_type"`
+	FileSize     int64     `json:"file_size"`
+	UploadedBy   uint      `gorm:"index;not null" json:"uploaded_by"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type OperationLog struct {
+	ID         uint      `gorm:"primaryKey" json:"id"`
+	ActorID    uint      `gorm:"index;not null" json:"actor_id"`
+	ActorRole  string    `gorm:"size:32;index;not null" json:"actor_role"`
+	Action     string    `gorm:"size:64;index;not null" json:"action"`
+	TargetType string    `gorm:"size:64;index;not null" json:"target_type"`
+	TargetID   uint      `gorm:"index;not null" json:"target_id"`
+	Summary    string    `gorm:"size:255;not null" json:"summary"`
+	DetailJSON string    `gorm:"type:text" json:"detail_json"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
+type Notification struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	UserID    uint       `gorm:"index;not null" json:"user_id"`
+	Category  string     `gorm:"size:64;index;not null" json:"category"`
+	Title     string     `gorm:"size:255;not null" json:"title"`
+	Content   string     `gorm:"type:text" json:"content"`
+	Link      string     `gorm:"size:255" json:"link"`
+	IsRead    bool       `gorm:"index;default:false" json:"is_read"`
+	CreatedAt time.Time  `json:"created_at"`
+	ReadAt    *time.Time `json:"read_at,omitempty"`
 }

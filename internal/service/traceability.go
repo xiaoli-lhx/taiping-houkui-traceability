@@ -462,6 +462,21 @@ func (s *TraceService) CreateAudit(batchID uint, input AuditInput, operator Oper
 		if err := tx.Create(&audit).Error; err != nil {
 			return err
 		}
+		if err := logOperationTx(tx, OperationLogCreateInput{
+			ActorID:    operator.UserID,
+			ActorRole:  operator.PrimaryRole(),
+			Action:     "create_audit",
+			TargetType: model.LogTargetAuditRecord,
+			TargetID:   audit.ID,
+			Summary:    "监管方提交了审核记录",
+			Detail: map[string]any{
+				"batch_id": batchID,
+				"status":   audit.Status,
+				"action":   audit.Action,
+			},
+		}); err != nil {
+			return err
+		}
 
 		batchUpdates := map[string]any{
 			"audit_status": audit.Status,
@@ -474,7 +489,15 @@ func (s *TraceService) CreateAudit(batchID uint, input AuditInput, operator Oper
 		}
 
 		if audit.Status == model.AuditStatusRejected {
-			if err := s.createOrOverwriteRectificationTaskTx(tx, batchID, stage, &audit); err != nil {
+			task, err := s.createOrOverwriteRectificationTaskTx(tx, batchID, stage, &audit)
+			if err != nil {
+				return err
+			}
+			notifications, err := s.buildRectificationTaskNotificationsTx(tx, task, &batch)
+			if err != nil {
+				return err
+			}
+			if err := createNotificationsTx(tx, notifications); err != nil {
 				return err
 			}
 		}
@@ -548,10 +571,40 @@ func (s *TraceService) SubmitRectification(id uint, input RectificationSubmitInp
 		if err := tx.Model(&model.RectificationTask{}).Where("id = ?", id).Updates(taskUpdates).Error; err != nil {
 			return err
 		}
-		return tx.Model(&model.TeaBatch{}).Where("id = ?", task.BatchID).Updates(map[string]any{
+		if err := tx.Model(&model.TeaBatch{}).Where("id = ?", task.BatchID).Updates(map[string]any{
 			"rectification_status": model.RectificationStatusSubmitted,
 			"audit_status":         model.AuditStatusPending,
-		}).Error
+		}).Error; err != nil {
+			return err
+		}
+		if err := logOperationTx(tx, OperationLogCreateInput{
+			ActorID:    operator.UserID,
+			ActorRole:  operator.PrimaryRole(),
+			Action:     "submit_rectification",
+			TargetType: model.LogTargetRectificationTask,
+			TargetID:   id,
+			Summary:    "提交了整改说明",
+			Detail: map[string]any{
+				"batch_id": task.BatchID,
+			},
+		}); err != nil {
+			return err
+		}
+		regulators, err := findUsersByRoleAndOrganization(tx, model.RoleRegulator, "")
+		if err != nil {
+			return err
+		}
+		notifications := make([]NotificationCreateInput, 0, len(regulators))
+		for _, regulator := range regulators {
+			notifications = append(notifications, NotificationCreateInput{
+				UserID:   regulator.ID,
+				Category: model.NotificationCategoryRectificationReview,
+				Title:    "有新的整改任务待复审",
+				Content:  fmt.Sprintf("批次 %d 的整改说明已提交，请尽快复审。", task.BatchID),
+				Link:     "/regulator/reviews",
+			})
+		}
+		return createNotificationsTx(tx, notifications)
 	})
 	if err != nil {
 		return nil, err
@@ -613,7 +666,28 @@ func (s *TraceService) ReviewRectification(id uint, input RectificationReviewInp
 			Comment:       strings.TrimSpace(input.ReviewerComment),
 			ReviewedAt:    now,
 		}
-		return tx.Create(&audit).Error
+		if err := tx.Create(&audit).Error; err != nil {
+			return err
+		}
+		if err := logOperationTx(tx, OperationLogCreateInput{
+			ActorID:    operator.UserID,
+			ActorRole:  operator.PrimaryRole(),
+			Action:     "review_rectification",
+			TargetType: model.LogTargetRectificationTask,
+			TargetID:   id,
+			Summary:    "监管方提交了整改复审结果",
+			Detail: map[string]any{
+				"status": status,
+			},
+		}); err != nil {
+			return err
+		}
+
+		notifications, err := s.buildRectificationReviewNotificationsTx(tx, task, status)
+		if err != nil {
+			return err
+		}
+		return createNotificationsTx(tx, notifications)
 	})
 	if err != nil {
 		return nil, err
@@ -693,7 +767,7 @@ func (s *TraceService) hasOpenRectificationTask(batchID uint) (bool, error) {
 	return count > 0, nil
 }
 
-func (s *TraceService) createOrOverwriteRectificationTaskTx(tx *gorm.DB, batchID uint, stage *model.TraceStageRecord, audit *model.AuditRecord) error {
+func (s *TraceService) createOrOverwriteRectificationTaskTx(tx *gorm.DB, batchID uint, stage *model.TraceStageRecord, audit *model.AuditRecord) (*model.RectificationTask, error) {
 	responsibleRole := model.RoleEnterprise
 	if stage != nil && (stage.Stage == model.StagePlanting || stage.Stage == model.StagePicking) {
 		responsibleRole = model.RoleFarmer
@@ -710,7 +784,7 @@ func (s *TraceService) createOrOverwriteRectificationTaskTx(tx *gorm.DB, batchID
 		Order("updated_at DESC, id DESC").
 		First(&existing).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
+		return nil, err
 	}
 
 	if existing.ID != 0 {
@@ -728,7 +802,22 @@ func (s *TraceService) createOrOverwriteRectificationTaskTx(tx *gorm.DB, batchID
 			"reviewed_by":      nil,
 			"reviewed_at":      nil,
 		}
-		return tx.Model(&model.RectificationTask{}).Where("id = ?", existing.ID).Updates(updates).Error
+		if err := tx.Model(&model.RectificationTask{}).Where("id = ?", existing.ID).Updates(updates).Error; err != nil {
+			return nil, err
+		}
+		existing.StageRecordID = stageRecordID(stage)
+		existing.SourceAuditID = audit.ID
+		existing.ResponsibleRole = responsibleRole
+		existing.Status = model.RectificationStatusPendingSubmission
+		existing.IssueSummary = issueSummary
+		existing.RequiredAction = requiredAction
+		existing.ResponseComment = ""
+		existing.ReviewerComment = strings.TrimSpace(audit.Comment)
+		existing.SubmittedBy = nil
+		existing.SubmittedAt = nil
+		existing.ReviewedBy = nil
+		existing.ReviewedAt = nil
+		return &existing, nil
 	}
 
 	task := model.RectificationTask{
@@ -741,7 +830,10 @@ func (s *TraceService) createOrOverwriteRectificationTaskTx(tx *gorm.DB, batchID
 		RequiredAction:  requiredAction,
 		ReviewerComment: strings.TrimSpace(audit.Comment),
 	}
-	return tx.Create(&task).Error
+	if err := tx.Create(&task).Error; err != nil {
+		return nil, err
+	}
+	return &task, nil
 }
 
 func normalizeStage(stage string) string {
@@ -823,6 +915,74 @@ func defaultAuditAction(action string) string {
 		return "review"
 	}
 	return strings.TrimSpace(action)
+}
+
+func (s *TraceService) buildRectificationTaskNotificationsTx(tx *gorm.DB, task *model.RectificationTask, batch *model.TeaBatch) ([]NotificationCreateInput, error) {
+	organization := batch.EnterpriseName
+	link := "/enterprise/rectifications"
+	if task.ResponsibleRole == model.RoleFarmer {
+		organization = batch.FarmName
+		link = "/farmer/rectifications"
+	}
+
+	recipients, err := findUsersByRoleAndOrganization(tx, task.ResponsibleRole, organization)
+	if err != nil {
+		return nil, err
+	}
+	if len(recipients) == 0 && batch.CreatedBy != 0 && task.ResponsibleRole == model.RoleEnterprise {
+		var createdBy model.User
+		if err := tx.First(&createdBy, batch.CreatedBy).Error; err == nil {
+			recipients = append(recipients, createdBy)
+		}
+	}
+
+	notifications := make([]NotificationCreateInput, 0, len(recipients))
+	for _, recipient := range recipients {
+		notifications = append(notifications, NotificationCreateInput{
+			UserID:   recipient.ID,
+			Category: model.NotificationCategoryRectificationTask,
+			Title:    "收到新的整改任务",
+			Content:  fmt.Sprintf("批次 %s 被驳回，请根据整改要求补充说明后重新提交。", batch.BatchCode),
+			Link:     link,
+		})
+	}
+	return notifications, nil
+}
+
+func (s *TraceService) buildRectificationReviewNotificationsTx(tx *gorm.DB, task *model.RectificationTask, status string) ([]NotificationCreateInput, error) {
+	var batch model.TeaBatch
+	if err := tx.First(&batch, task.BatchID).Error; err != nil {
+		return nil, err
+	}
+
+	organization := batch.EnterpriseName
+	link := "/enterprise/rectifications"
+	if task.ResponsibleRole == model.RoleFarmer {
+		organization = batch.FarmName
+		link = "/farmer/rectifications"
+	}
+
+	recipients, err := findUsersByRoleAndOrganization(tx, task.ResponsibleRole, organization)
+	if err != nil {
+		return nil, err
+	}
+	notifications := make([]NotificationCreateInput, 0, len(recipients))
+	for _, recipient := range recipients {
+		title := "整改复审未通过"
+		content := fmt.Sprintf("批次 %s 的整改复审未通过，请根据最新意见继续整改。", batch.BatchCode)
+		if status == model.AuditStatusApproved {
+			title = "整改复审已通过"
+			content = fmt.Sprintf("批次 %s 的整改复审已通过。", batch.BatchCode)
+		}
+		notifications = append(notifications, NotificationCreateInput{
+			UserID:   recipient.ID,
+			Category: model.NotificationCategoryRectificationReview,
+			Title:    title,
+			Content:  content,
+			Link:     link,
+		})
+	}
+	return notifications, nil
 }
 
 func validateRectificationResponse(responseComment string) error {

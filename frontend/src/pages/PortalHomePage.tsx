@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRightOutlined, AuditOutlined, BarChartOutlined, ClockCircleOutlined, TagsOutlined } from '@ant-design/icons'
+import { ArrowRightOutlined, AuditOutlined, BarChartOutlined, BellOutlined, ClockCircleOutlined, TagsOutlined } from '@ant-design/icons'
 import { Alert, Card, Col, Empty, Row, Space, Spin, Tag, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 
@@ -10,10 +10,11 @@ import {
   formatDateTime,
   getAuditStatusMeta,
   getBatchStatusMeta,
+  getNotificationCategoryLabel,
   getRectificationStatusMeta,
   getRiskSeverityMeta,
 } from '../lib/display'
-import type { OverviewStats, RectificationTask, RiskAlertItem, TeaBatch } from '../types'
+import type { NotificationItem, OverviewStats, RectificationTask, RiskAlertItem, TeaBatch, TodoSummary } from '../types'
 
 type PortalStat = {
   label: string
@@ -46,6 +47,7 @@ export function PortalHomePage({
   const [previewTitle, setPreviewTitle] = useState('工作概览')
   const [previewDescription, setPreviewDescription] = useState('')
   const [previewItems, setPreviewItems] = useState<PortalPreviewItem[]>([])
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
 
   const role = user?.role_code
 
@@ -58,28 +60,38 @@ export function PortalHomePage({
       setLoading(true)
       setError('')
       try {
-        const requests: Array<Promise<unknown>> = [api.getBatches(token, { pageSize: 100 })]
+        const requests: Array<Promise<unknown>> = [
+          api.getBatches(token, { pageSize: 100 }),
+          api.getTodos(token),
+          api.getNotifications(token, { isRead: false, pageSize: 5 }),
+        ]
         if (role === 'enterprise' || role === 'regulator') {
           requests.push(api.getOverview(token))
         }
-        if (role === 'farmer' || role === 'regulator') {
+        if (role === 'farmer' || role === 'enterprise' || role === 'regulator') {
           requests.push(api.getRectifications(token))
         }
         if (role === 'regulator') {
           requests.push(api.getRiskAlerts(token))
         }
 
-        const [batchResult, secondResult, thirdResult, fourthResult] = await Promise.all(requests)
-        const batches = (batchResult as { items: TeaBatch[] }).items
+        const results = await Promise.all(requests)
+        const batches = (results[0] as { items: TeaBatch[] }).items
+        const todos = results[1] as TodoSummary
+        const notificationResult = results[2] as { items: NotificationItem[] }
+        setNotifications(notificationResult.items)
+
+        const unreadCount = todos.items.find((item) => item.key === 'unread_notifications')?.count ?? 0
 
         if (role === 'farmer') {
-          const rectifications = (secondResult as RectificationTask[]) ?? []
+          const rectifications = (results[3] as RectificationTask[]) ?? []
           const pendingRectifications = rectifications.filter((item) => item.responsible_role === 'farmer' && item.status !== 'completed')
           setStats([
             { label: '我的批次', value: batches.length, tone: 'primary' },
             { label: '处理中', value: batches.filter((item) => item.status === 'processing').length, tone: 'warning' },
             { label: '已完成', value: batches.filter((item) => item.status === 'completed').length, tone: 'success' },
             { label: '待整改', value: pendingRectifications.length, tone: 'danger' },
+            { label: '未读通知', value: unreadCount, tone: 'primary' },
           ])
           setPreviewTitle('生产批次列表')
           setPreviewDescription('查看最近批次、审核状态与生产节点进度，便于快速进入补录或详情页。')
@@ -100,12 +112,15 @@ export function PortalHomePage({
         }
 
         if (role === 'enterprise') {
-          const overview = secondResult as OverviewStats
+          const overview = results[3] as OverviewStats
+          const rectifications = (results[4] as RectificationTask[]) ?? []
           setStats([
             { label: '在产批次', value: batches.length, tone: 'primary' },
             { label: '公开批次', value: overview.public_batches, tone: 'success' },
             { label: '评估总数', value: overview.total_evaluations, tone: 'warning' },
             { label: '平均得分', value: overview.average_score.toFixed(1), tone: 'danger' },
+            { label: '待整改', value: rectifications.filter((item) => item.status === 'pending_submission').length, tone: 'warning' },
+            { label: '未读通知', value: unreadCount, tone: 'primary' },
           ])
           setPreviewTitle('批次管理')
           setPreviewDescription('优先展示最新批次、公开状态与品质等级，帮助企业快速进入批次管理与品质评估。')
@@ -126,15 +141,16 @@ export function PortalHomePage({
         }
 
         if (role === 'regulator') {
-          const overview = secondResult as OverviewStats
-          const rectifications = (thirdResult as RectificationTask[]) ?? []
-          const risks = (fourthResult as RiskAlertItem[]) ?? []
+          const overview = results[3] as OverviewStats
+          const rectifications = (results[4] as RectificationTask[]) ?? []
+          const risks = (results[5] as RiskAlertItem[]) ?? []
           const pendingBatches = batches.filter((item) => item.audit_status === 'pending')
           setStats([
             { label: '待审核批次', value: pendingBatches.length, tone: 'warning' },
             { label: '待复审整改', value: rectifications.filter((item) => item.status === 'submitted').length, tone: 'danger' },
             { label: '风险预警', value: risks.length, tone: 'primary' },
             { label: '公开批次', value: overview.public_batches, tone: 'success' },
+            { label: '未读通知', value: unreadCount, tone: 'warning' },
           ])
           setPreviewTitle('审查队列')
           setPreviewDescription('优先展示待审核批次和风险事项，便于监管方快速进入审查、复审和风险研判。')
@@ -235,6 +251,18 @@ export function PortalHomePage({
           </Col>
           <Col xs={24} lg={10}>
             <div className="portal-action-grid">
+              <Link to="/notifications" className="portal-action-card">
+                <div className="portal-action-icon">
+                  <BellOutlined />
+                </div>
+                <div>
+                  <Typography.Text strong>通知中心</Typography.Text>
+                  <div>
+                    <Typography.Text type="secondary">查看最近通知和待办消息</Typography.Text>
+                  </div>
+                </div>
+                <ArrowRightOutlined />
+              </Link>
               {shortcutCards.map((shortcut) => (
                 <Link key={shortcut.to} to={withPortalPrefix(user, shortcut.to)} className="portal-action-card">
                   <div className="portal-action-icon">{shortcut.icon}</div>
@@ -310,17 +338,33 @@ export function PortalHomePage({
         <Col xs={24} xl={8}>
           <Card bordered={false} className="admin-section-card">
             <Typography.Title level={4} style={{ marginTop: 0 }}>
-              快捷操作
+              最近通知
             </Typography.Title>
-            <div className="portal-quick-grid">
-              {shortcutCards.map((shortcut) => (
-                <Link key={shortcut.to} to={withPortalPrefix(user, shortcut.to)} className="portal-quick-tile">
-                  <div className="portal-action-icon">{shortcut.icon}</div>
-                  <Typography.Text strong>{shortcut.label}</Typography.Text>
-                  <Typography.Text type="secondary">点击进入</Typography.Text>
-                </Link>
-              ))}
-            </div>
+            {loading ? (
+              <div className="admin-inline-loading">
+                <Spin />
+              </div>
+            ) : notifications.length ? (
+              <div className="admin-preview-list">
+                {notifications.map((item) => (
+                  <div key={item.id} className="admin-preview-item">
+                    <div className="admin-preview-main">
+                      <Space size={8} wrap>
+                        <Typography.Text strong>{item.title}</Typography.Text>
+                        <Tag>{getNotificationCategoryLabel(item.category)}</Tag>
+                      </Space>
+                      <Typography.Text>{item.content}</Typography.Text>
+                      <Typography.Text type="secondary">{formatDateTime(item.created_at)}</Typography.Text>
+                    </div>
+                    <Link to={item.link || '/notifications'} className="admin-card-link">
+                      查看 <ArrowRightOutlined />
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无未读通知" />
+            )}
           </Card>
         </Col>
       </Row>

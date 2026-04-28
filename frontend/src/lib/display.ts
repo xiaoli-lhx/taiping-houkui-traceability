@@ -96,6 +96,69 @@ export function getRiskSeverityMeta(severity?: string) {
   }
 }
 
+export function getNotificationCategoryLabel(category?: string) {
+  switch (category) {
+    case 'registration_review':
+      return '注册审核'
+    case 'feedback_ticket':
+      return '反馈工单'
+    case 'rectification_task':
+      return '整改任务'
+    case 'rectification_review':
+      return '整改复审'
+    case 'system_notice':
+      return '系统通知'
+    default:
+      return category || '-'
+  }
+}
+
+export function getOperationActionLabel(action?: string) {
+  switch (action) {
+    case 'profile_update':
+      return '修改资料'
+    case 'change_password':
+      return '修改密码'
+    case 'approve_registration':
+      return '通过注册'
+    case 'reject_registration':
+      return '驳回注册'
+    case 'enable_user':
+      return '启用账号'
+    case 'disable_user':
+      return '停用账号'
+    case 'reset_password':
+      return '重置密码'
+    case 'create_audit':
+      return '提交审核'
+    case 'submit_rectification':
+      return '提交整改'
+    case 'review_rectification':
+      return '复审整改'
+    case 'process_feedback':
+      return '处理反馈'
+    case 'upload_attachment':
+      return '上传附件'
+    case 'delete_attachment':
+      return '删除附件'
+    default:
+      return action || '-'
+  }
+}
+
+export function formatFileSize(size?: number) {
+  if (!size) {
+    return '0 B'
+  }
+  if (size < 1024) {
+    return `${size} B`
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`
+  }
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export function getStageLabel(stage?: string) {
   switch (stage) {
     case 'planting':

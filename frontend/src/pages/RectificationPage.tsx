@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 
 import { getRoleLabel, withPortalPrefix } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
+import { AttachmentPanel } from '../components/AttachmentPanel'
 import { EmptyState } from '../components/EmptyState'
 import { api } from '../lib/api'
 import { formatDateTime, getRectificationStatusMeta } from '../lib/display'
@@ -233,6 +234,12 @@ export function RectificationPage() {
                 </Button>
               </Space>
             </Form>
+            <AttachmentPanel
+              bizType="rectification_task"
+              bizId={selectedTask.id}
+              title="整改附件"
+              canManage
+            />
           </Space>
         ) : null}
       </Drawer>

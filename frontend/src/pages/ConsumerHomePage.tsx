@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react'
-import { ArrowRightOutlined, HeartOutlined, HistoryOutlined, MessageOutlined, SearchOutlined } from '@ant-design/icons'
+import { ArrowRightOutlined, BellOutlined, HeartOutlined, HistoryOutlined, MessageOutlined, SearchOutlined } from '@ant-design/icons'
 import { Alert, Card, Col, Row, Space, Spin, Tag, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/useAuth'
 import { EmptyState } from '../components/EmptyState'
 import { api } from '../lib/api'
-import { formatDateTime, getFeedbackStatusMeta } from '../lib/display'
-import type { ConsumerQueryHistory } from '../types'
+import { formatDateTime, getFeedbackStatusMeta, getNotificationCategoryLabel } from '../lib/display'
+import type { ConsumerQueryHistory, NotificationItem } from '../types'
 
 export function ConsumerHomePage() {
   const { token } = useAuth()
   const [favoriteCount, setFavoriteCount] = useState(0)
   const [historyCount, setHistoryCount] = useState(0)
   const [feedbackCount, setFeedbackCount] = useState(0)
+  const [notificationCount, setNotificationCount] = useState(0)
   const [historyItems, setHistoryItems] = useState<ConsumerQueryHistory[]>([])
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -23,11 +25,19 @@ export function ConsumerHomePage() {
       setLoading(true)
       setError('')
       try {
-        const [favorites, history, feedback] = await Promise.all([api.getFavorites(token), api.getHistory(token), api.getConsumerFeedback(token)])
+        const [favorites, history, feedback, todos, notificationResult] = await Promise.all([
+          api.getFavorites(token),
+          api.getHistory(token),
+          api.getConsumerFeedback(token),
+          api.getTodos(token),
+          api.getNotifications(token, { isRead: false, pageSize: 5 }),
+        ])
         setFavoriteCount(favorites.length)
         setHistoryCount(history.length)
         setFeedbackCount(feedback.filter((item) => item.status !== 'resolved').length)
+        setNotificationCount(todos.items.find((item) => item.key === 'unread_notifications')?.count ?? 0)
         setHistoryItems(history.slice(0, 5))
+        setNotifications(notificationResult.items)
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : '加载消费者工作台失败')
       } finally {
@@ -92,6 +102,18 @@ export function ConsumerHomePage() {
                 </div>
                 <ArrowRightOutlined />
               </Link>
+              <Link to="/notifications" className="portal-action-card">
+                <div className="portal-action-icon">
+                  <BellOutlined />
+                </div>
+                <div>
+                  <Typography.Text strong>通知中心</Typography.Text>
+                  <div>
+                    <Typography.Text type="secondary">查看反馈处理与系统消息</Typography.Text>
+                  </div>
+                </div>
+                <ArrowRightOutlined />
+              </Link>
             </div>
           </Col>
         </Row>
@@ -121,6 +143,14 @@ export function ConsumerHomePage() {
             <Typography.Text className="admin-stat-label">处理中反馈</Typography.Text>
             <Typography.Title level={2} className="admin-stat-value">
               {loading ? <Spin size="small" /> : feedbackCount}
+            </Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card bordered={false} className="admin-stat-card admin-stat-card--danger">
+            <Typography.Text className="admin-stat-label">未读通知</Typography.Text>
+            <Typography.Title level={2} className="admin-stat-value">
+              {loading ? <Spin size="small" /> : notificationCount}
             </Typography.Title>
           </Card>
         </Col>
@@ -163,6 +193,46 @@ export function ConsumerHomePage() {
           </div>
         ) : (
           <EmptyState description="暂无查询历史" />
+        )}
+      </Card>
+
+      <Card bordered={false} className="admin-section-card">
+        <div className="admin-table-summary">
+          <div>
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              最近通知
+            </Typography.Title>
+            <Typography.Text type="secondary">查看反馈处理结果和系统站内通知。</Typography.Text>
+          </div>
+          <Tag className="admin-inline-tag" color="processing" icon={<BellOutlined />}>
+            通知预览
+          </Tag>
+        </div>
+
+        {loading ? (
+          <div className="admin-inline-loading">
+            <Spin />
+          </div>
+        ) : notifications.length ? (
+          <div className="admin-preview-list">
+            {notifications.map((item) => (
+              <div key={item.id} className="admin-preview-item">
+                <div className="admin-preview-main">
+                  <Space size={8} wrap>
+                    <Typography.Text strong>{item.title}</Typography.Text>
+                    <Tag>{getNotificationCategoryLabel(item.category)}</Tag>
+                  </Space>
+                  <Typography.Text>{item.content}</Typography.Text>
+                  <Typography.Text type="secondary">{formatDateTime(item.created_at)}</Typography.Text>
+                </div>
+                <Link to={item.link || '/notifications'} className="admin-card-link">
+                  查看 <ArrowRightOutlined />
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState description="暂无未读通知" />
         )}
       </Card>
     </Space>

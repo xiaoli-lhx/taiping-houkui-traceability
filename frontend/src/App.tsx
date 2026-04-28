@@ -8,12 +8,14 @@ import { AdminHomePage } from './pages/AdminHomePage'
 import { AdminFeedbackPage } from './pages/AdminFeedbackPage'
 import { AdminRegistrationsPage } from './pages/AdminRegistrationsPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
+import { AdminLogsPage } from './pages/AdminLogsPage'
 import { BatchDetailPage } from './pages/BatchDetailPage'
 import { BatchListPage } from './pages/BatchListPage'
 import { ConsumerFavoritesPage } from './pages/ConsumerFavoritesPage'
 import { ConsumerFeedbackPage } from './pages/ConsumerFeedbackPage'
 import { ConsumerHomePage } from './pages/ConsumerHomePage'
 import { LoginPage } from './pages/LoginPage'
+import { NotificationCenterPage } from './pages/NotificationCenterPage'
 import { PortalHomePage } from './pages/PortalHomePage'
 import { ProfilePage } from './pages/ProfilePage'
 import { PublicQueryPage } from './pages/PublicQueryPage'
@@ -67,6 +69,14 @@ function ProtectedRoutes() {
           }
         />
         <Route
+          path="/admin/logs"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <AdminLogsPage />
+            </RoleGuard>
+          }
+        />
+        <Route
           path="/admin/batches/:id"
           element={
             <RoleGuard allowedRoles={['admin']}>
@@ -74,6 +84,8 @@ function ProtectedRoutes() {
             </RoleGuard>
           }
         />
+
+        <Route path="/notifications" element={<NotificationCenterPage />} />
 
         <Route
           path="/farmer"

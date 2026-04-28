@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -49,6 +50,11 @@ type FeedbackTicketView struct {
 	ProcessedAt *time.Time `json:"processed_at,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+type OperationLogListResult struct {
+	Items      []OperationLogView `json:"items"`
+	Pagination map[string]int64   `json:"pagination"`
 }
 
 func NewAdminService(db *gorm.DB) *AdminService {
@@ -102,9 +108,35 @@ func (s *AdminService) ApproveRegistration(userID, adminID uint) (*model.User, e
 		"approved_at":      &now,
 		"rejection_reason": "",
 	}
-	if err := s.db.Model(&model.User{}).Where("id = ?", userID).Updates(updates).Error; err != nil {
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.User{}).Where("id = ?", userID).Updates(updates).Error; err != nil {
+			return err
+		}
+		if err := logOperationTx(tx, OperationLogCreateInput{
+			ActorID:    adminID,
+			ActorRole:  model.RoleAdmin,
+			Action:     "approve_registration",
+			TargetType: model.LogTargetUserAccount,
+			TargetID:   userID,
+			Summary:    "管理员通过了注册申请",
+			Detail: map[string]any{
+				"username": user.Username,
+				"role":     user.RoleCode,
+			},
+		}); err != nil {
+			return err
+		}
+		return createNotificationTx(tx, NotificationCreateInput{
+			UserID:   user.ID,
+			Category: model.NotificationCategoryRegistrationReview,
+			Title:    "注册申请已通过",
+			Content:  "你的账号审核已通过，现在可以使用对应角色登录系统。",
+			Link:     NotificationLinkProfile,
+		})
+	}); err != nil {
 		return nil, err
 	}
+
 	return s.getUser(userID)
 }
 
@@ -115,22 +147,83 @@ func (s *AdminService) RejectRegistration(userID, adminID uint, reason string) (
 	}
 
 	now := time.Now()
+	rejectionReason := strings.TrimSpace(reason)
+	if rejectionReason == "" {
+		rejectionReason = "管理员驳回了当前注册申请。"
+	}
 	updates := map[string]any{
 		"approval_status":  model.ApprovalRejected,
 		"approved_by":      adminID,
 		"approved_at":      &now,
-		"rejection_reason": strings.TrimSpace(reason),
+		"rejection_reason": rejectionReason,
 	}
-	if err := s.db.Model(&model.User{}).Where("id = ?", userID).Updates(updates).Error; err != nil {
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.User{}).Where("id = ?", userID).Updates(updates).Error; err != nil {
+			return err
+		}
+		if err := logOperationTx(tx, OperationLogCreateInput{
+			ActorID:    adminID,
+			ActorRole:  model.RoleAdmin,
+			Action:     "reject_registration",
+			TargetType: model.LogTargetUserAccount,
+			TargetID:   userID,
+			Summary:    "管理员驳回了注册申请",
+			Detail: map[string]any{
+				"username": user.Username,
+				"role":     user.RoleCode,
+				"reason":   rejectionReason,
+			},
+		}); err != nil {
+			return err
+		}
+		return createNotificationTx(tx, NotificationCreateInput{
+			UserID:   user.ID,
+			Category: model.NotificationCategoryRegistrationReview,
+			Title:    "注册申请未通过",
+			Content:  fmt.Sprintf("你的账号审核未通过，原因：%s", rejectionReason),
+			Link:     NotificationLinkProfile,
+		})
+	}); err != nil {
 		return nil, err
 	}
+
 	return s.getUser(userID)
 }
 
-func (s *AdminService) EnableUser(userID uint) (*model.User, error) {
-	if err := s.db.Model(&model.User{}).Where("id = ?", userID).Update("status", model.UserStatusActive).Error; err != nil {
+func (s *AdminService) EnableUser(userID, operatorID uint) (*model.User, error) {
+	var user model.User
+	if err := s.db.First(&user, userID).Error; err != nil {
 		return nil, err
 	}
+
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.User{}).Where("id = ?", userID).Update("status", model.UserStatusActive).Error; err != nil {
+			return err
+		}
+		if err := logOperationTx(tx, OperationLogCreateInput{
+			ActorID:    operatorID,
+			ActorRole:  model.RoleAdmin,
+			Action:     "enable_user",
+			TargetType: model.LogTargetUserAccount,
+			TargetID:   userID,
+			Summary:    "管理员启用了账号",
+			Detail: map[string]any{
+				"username": user.Username,
+			},
+		}); err != nil {
+			return err
+		}
+		return createNotificationTx(tx, NotificationCreateInput{
+			UserID:   userID,
+			Category: model.NotificationCategorySystemNotice,
+			Title:    "账号已启用",
+			Content:  "你的账号状态已恢复为可用。",
+			Link:     NotificationLinkProfile,
+		})
+	}); err != nil {
+		return nil, err
+	}
+
 	return s.getUser(userID)
 }
 
@@ -139,21 +232,81 @@ func (s *AdminService) DisableUser(userID, operatorID uint) (*model.User, error)
 		return nil, errors.New("不能停用当前登录管理员账号")
 	}
 
-	if err := s.db.Model(&model.User{}).Where("id = ?", userID).Update("status", model.UserStatusDisabled).Error; err != nil {
+	var user model.User
+	if err := s.db.First(&user, userID).Error; err != nil {
 		return nil, err
 	}
+
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.User{}).Where("id = ?", userID).Update("status", model.UserStatusDisabled).Error; err != nil {
+			return err
+		}
+		if err := logOperationTx(tx, OperationLogCreateInput{
+			ActorID:    operatorID,
+			ActorRole:  model.RoleAdmin,
+			Action:     "disable_user",
+			TargetType: model.LogTargetUserAccount,
+			TargetID:   userID,
+			Summary:    "管理员停用了账号",
+			Detail: map[string]any{
+				"username": user.Username,
+			},
+		}); err != nil {
+			return err
+		}
+		return createNotificationTx(tx, NotificationCreateInput{
+			UserID:   userID,
+			Category: model.NotificationCategorySystemNotice,
+			Title:    "账号已停用",
+			Content:  "你的账号已被管理员停用，请联系平台管理员了解详情。",
+			Link:     NotificationLinkProfile,
+		})
+	}); err != nil {
+		return nil, err
+	}
+
 	return s.getUser(userID)
 }
 
-func (s *AdminService) ResetPassword(userID uint) (*model.User, error) {
+func (s *AdminService) ResetPassword(userID, operatorID uint) (*model.User, error) {
 	passwordHash, err := HashPassword(AdminResetPasswordValue)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.db.Model(&model.User{}).Where("id = ?", userID).Update("password_hash", passwordHash).Error; err != nil {
+	var user model.User
+	if err := s.db.First(&user, userID).Error; err != nil {
 		return nil, err
 	}
+
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.User{}).Where("id = ?", userID).Update("password_hash", passwordHash).Error; err != nil {
+			return err
+		}
+		if err := logOperationTx(tx, OperationLogCreateInput{
+			ActorID:    operatorID,
+			ActorRole:  model.RoleAdmin,
+			Action:     "reset_password",
+			TargetType: model.LogTargetUserAccount,
+			TargetID:   userID,
+			Summary:    "管理员重置了账号密码",
+			Detail: map[string]any{
+				"username": user.Username,
+			},
+		}); err != nil {
+			return err
+		}
+		return createNotificationTx(tx, NotificationCreateInput{
+			UserID:   userID,
+			Category: model.NotificationCategorySystemNotice,
+			Title:    "密码已被重置",
+			Content:  fmt.Sprintf("你的密码已被管理员重置，临时密码为 %s。", AdminResetPasswordValue),
+			Link:     NotificationLinkProfile,
+		})
+	}); err != nil {
+		return nil, err
+	}
+
 	return s.getUser(userID)
 }
 
@@ -177,6 +330,11 @@ func (s *AdminService) ProcessFeedback(id uint, input FeedbackProcessInput) (*Fe
 		return nil, errors.New("反馈处理状态不合法")
 	}
 
+	var feedback model.UserFeedback
+	if err := s.db.First(&feedback, id).Error; err != nil {
+		return nil, err
+	}
+
 	now := time.Now()
 	updates := map[string]any{
 		"status":       status,
@@ -184,12 +342,32 @@ func (s *AdminService) ProcessFeedback(id uint, input FeedbackProcessInput) (*Fe
 		"processed_by": &input.OperatorID,
 		"processed_at": &now,
 	}
-	if err := s.db.Model(&model.UserFeedback{}).Where("id = ?", id).Updates(updates).Error; err != nil {
-		return nil, err
-	}
-
-	var feedback model.UserFeedback
-	if err := s.db.First(&feedback, id).Error; err != nil {
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.UserFeedback{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+			return err
+		}
+		if err := logOperationTx(tx, OperationLogCreateInput{
+			ActorID:    input.OperatorID,
+			ActorRole:  model.RoleAdmin,
+			Action:     "process_feedback",
+			TargetType: model.LogTargetFeedbackTicket,
+			TargetID:   id,
+			Summary:    "管理员更新了反馈工单状态",
+			Detail: map[string]any{
+				"status":       status,
+				"process_note": strings.TrimSpace(input.ProcessNote),
+			},
+		}); err != nil {
+			return err
+		}
+		return createNotificationTx(tx, NotificationCreateInput{
+			UserID:   feedback.UserID,
+			Category: model.NotificationCategoryFeedbackTicket,
+			Title:    "反馈工单状态已更新",
+			Content:  fmt.Sprintf("你的反馈工单当前状态为：%s。", status),
+			Link:     "/consumer/feedback",
+		})
+	}); err != nil {
 		return nil, err
 	}
 
@@ -201,6 +379,86 @@ func (s *AdminService) ProcessFeedback(id uint, input FeedbackProcessInput) (*Fe
 		return nil, gorm.ErrRecordNotFound
 	}
 	return &items[0], nil
+}
+
+func (s *AdminService) ListOperationLogs(filter OperationLogFilter) (*OperationLogListResult, error) {
+	page := filter.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := filter.PageSize
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	query := s.db.Model(&model.OperationLog{})
+	if filter.ActorID != nil && *filter.ActorID != 0 {
+		query = query.Where("actor_id = ?", *filter.ActorID)
+	}
+	if action := strings.TrimSpace(filter.Action); action != "" {
+		query = query.Where("action = ?", action)
+	}
+	if targetType := strings.TrimSpace(filter.TargetType); targetType != "" {
+		query = query.Where("target_type = ?", targetType)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, err
+	}
+
+	var logs []model.OperationLog
+	if err := query.Order("created_at DESC, id DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&logs).Error; err != nil {
+		return nil, err
+	}
+
+	actorIDs := make([]uint, 0, len(logs))
+	seen := make(map[uint]struct{}, len(logs))
+	for _, item := range logs {
+		if _, exists := seen[item.ActorID]; exists {
+			continue
+		}
+		seen[item.ActorID] = struct{}{}
+		actorIDs = append(actorIDs, item.ActorID)
+	}
+
+	users := make(map[uint]model.User, len(actorIDs))
+	if len(actorIDs) > 0 {
+		var rows []model.User
+		if err := s.db.Where("id IN ?", actorIDs).Find(&rows).Error; err != nil {
+			return nil, err
+		}
+		for _, row := range rows {
+			users[row.ID] = row
+		}
+	}
+
+	items := make([]OperationLogView, 0, len(logs))
+	for _, log := range logs {
+		actor := users[log.ActorID]
+		items = append(items, OperationLogView{
+			ID:               log.ID,
+			ActorID:          log.ActorID,
+			ActorRole:        log.ActorRole,
+			ActorUsername:    actor.Username,
+			ActorDisplayName: actor.DisplayName,
+			Action:           log.Action,
+			TargetType:       log.TargetType,
+			TargetID:         log.TargetID,
+			Summary:          log.Summary,
+			DetailJSON:       log.DetailJSON,
+			CreatedAt:        log.CreatedAt,
+		})
+	}
+
+	return &OperationLogListResult{
+		Items: items,
+		Pagination: map[string]int64{
+			"page":      int64(page),
+			"page_size": int64(pageSize),
+			"total":     total,
+		},
+	}, nil
 }
 
 func (s *AdminService) getUser(userID uint) (*model.User, error) {

@@ -52,5 +52,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.ConsumerFavorite{},
 		&model.UserFeedback{},
 		&model.ConsumerQueryHistory{},
+		&model.Attachment{},
+		&model.OperationLog{},
+		&model.Notification{},
 	)
 }
